@@ -22,6 +22,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.math.trajectory.Trajectory;
@@ -40,7 +41,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.FieldConstants;
-import frc.robot.Conversions.TalonFXConversions;
+import frc.robot.utils.Conversions.TalonFXConversions;
 
 public class Drivetrain extends SubsystemBase {
     private WPI_TalonFX backLeft = new WPI_TalonFX(DriveConstants.backLeftPort);
@@ -48,15 +49,14 @@ public class Drivetrain extends SubsystemBase {
     private WPI_TalonFX frontLeft = new WPI_TalonFX(DriveConstants.frontLeftPort);
     private WPI_TalonFX frontRight = new WPI_TalonFX(DriveConstants.frontRightPort);
 
-
     private DifferentialDrive differentialDrive = new DifferentialDrive((MotorController)frontLeft, (MotorController)frontRight);
     private DifferentialDriveKinematics kinematics = new DifferentialDriveKinematics(DriveConstants.trackwidth);
     
-    // private DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(new Rotation2d(), new Pose2d());
-    public static DifferentialDrivePoseEstimator odometry = new DifferentialDrivePoseEstimator(new Rotation2d(), new Pose2d(),
-        new MatBuilder<>(Nat.N5(), Nat.N1()).fill(0.02, 0.02, 0.01, 0.02, 0.02), // State measurement standard deviations. X, Y, theta.
-        new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01), // Local measurement standard deviations. Left encoder, right encoder, gyro.
-        new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01)); // Global measurement standard deviations. X, Y, and theta.
+    private DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(new Rotation2d(), new Pose2d());
+    // public static DifferentialDrivePoseEstimator odometry = new DifferentialDrivePoseEstimator(new Rotation2d(), new Pose2d(),
+    //     new MatBuilder<>(Nat.N5(), Nat.N1()).fill(0.02, 0.02, 0.01, 0.02, 0.02), // State measurement standard deviations. X, Y, theta.
+    //     new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01), // Local measurement standard deviations. Left encoder, right encoder, gyro.
+    //     new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01)); // Global measurement standard deviations. X, Y, and theta.
 
     private SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(DriveConstants.sVolts, DriveConstants.vVoltSecondsPerMeter, DriveConstants.aVoltSecondsSquaredPerMeter);
 
@@ -64,7 +64,6 @@ public class Drivetrain extends SubsystemBase {
     private PIDController rightController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
 
     private AHRS gyro = new AHRS();
-    private double headingSnapshot;
 
     private Field2d field = new Field2d();
 
@@ -270,7 +269,7 @@ public class Drivetrain extends SubsystemBase {
         // Helper function to convert from meters per seconds to encoder units per epoch for PID'ing
         double wheelRPS = metersPerSecond / (Math.PI * DriveConstants.wheelDiameter);
         double motorRPS = wheelRPS * DriveConstants.gearboxRatio;
-        return TalonFXConversions.RPM2Native(motorRPS / 60)
+        return TalonFXConversions.RPM2Native(motorRPS / 60);
     }
 
     public static double nativeToMetersPerSecond(double nativeUnits) { 
@@ -290,14 +289,14 @@ public class Drivetrain extends SubsystemBase {
         return nativePositionToMeters((frontLeft.getSelectedSensorPosition() + backLeft.getSelectedSensorPosition())/2.);
     }
     public double getLeftEncoderVelocity() {
-        return nativePositionToMeters((frontLeft.getSelectedSensorVelocity() + backLeft.getSelectedSensorVelocity())/2. * 10);
+        return nativeToMetersPerSecond((frontLeft.getSelectedSensorVelocity() + backLeft.getSelectedSensorVelocity())/2. * 10);
     }
 
     public double getRightEncoderPosition() { 
         return nativePositionToMeters((frontRight.getSelectedSensorPosition() + backRight.getSelectedSensorPosition())/2.); 
     }
     public double getRightEncoderVelocity() {   
-        return nativePositionToMeters((frontRight.getSelectedSensorVelocity() + backRight.getSelectedSensorVelocity())/2. * 10); 
+        return nativeToMetersPerSecond((frontRight.getSelectedSensorVelocity() + backRight.getSelectedSensorVelocity())/2. * 10); 
     }
     
     public double getHeading() {
@@ -309,5 +308,5 @@ public class Drivetrain extends SubsystemBase {
     /* Odometry Helper Functions */
     public DifferentialDriveKinematics getKinematics() { return kinematics; }
     public DifferentialDriveWheelSpeeds getWheelSpeeds() { return new DifferentialDriveWheelSpeeds(getLeftEncoderVelocity(), getLeftEncoderVelocity()); }
-    public Pose2d getPose() { return odometry.getEstimatedPosition(); }
+    public Pose2d getPose() { return odometry.getPoseMeters(); /*odometry.getEstimatedPosition();*/ }
 }

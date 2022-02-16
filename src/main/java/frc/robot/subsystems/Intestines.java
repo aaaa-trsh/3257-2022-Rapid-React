@@ -13,7 +13,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Intestines extends SubsystemBase {
     // private Solenoid intakeSolenoid = new Solenoid(PneumaticsModuleType.CTREPCM, IntestineConstants.intakeSolenoidPort);
-    private CANSparkMax intakeMotor = new CANSparkMax(IntestineConstants.intakeSparkPort, MotorType.kBrushless);
+    // private CANSparkMax intakeMotor = new CANSparkMax(IntestineConstants.intakeSparkPort, MotorType.kBrushless);
     private boolean isIntakeActuated = false;
     
     private CANSparkMax magazineMotor = new CANSparkMax(IntestineConstants.magazinePort, MotorType.kBrushless);
@@ -28,11 +28,11 @@ public class Intestines extends SubsystemBase {
         isIntakeActuated = on;
     }
 
-    public void setIntakePercent(double percent) { intakeMotor.set(percent); }
+    // public void setIntakePercent(double percent) { intakeMotor.set(percent); }
 
     public boolean getIntakeState() { return isIntakeActuated; }
 
-    public boolean isBallInQueue() { return magazineSwitch.get(); }
+    public boolean isBallInQueue() { return !magazineSwitch.get(); }
     public void setMagazinePercent(double percent) { magazineMotor.set(percent); }
 
 
