@@ -31,7 +31,7 @@ public class RobotContainer {
         intestines.setDefaultCommand(
             new RunCommand(
                 () ->  {
-                    if (intestinesOverride)
+                    if (!intestinesOverride)
                         intestines.setMagazinePercent(intestines.isBallInQueue() ? 0.3 : 0);
                 }, 
                 intestines
