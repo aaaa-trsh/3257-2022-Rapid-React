@@ -9,8 +9,10 @@ import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.IntestineConstants;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 public class Intestines extends SubsystemBase {
-    private Solenoid intakeSolenoid = new Solenoid(PneumaticsModuleType.CTREPCM, IntestineConstants.intakeSolenoidPort);
+    // private Solenoid intakeSolenoid = new Solenoid(PneumaticsModuleType.CTREPCM, IntestineConstants.intakeSolenoidPort);
     private CANSparkMax intakeMotor = new CANSparkMax(IntestineConstants.intakeSparkPort, MotorType.kBrushless);
     private boolean isIntakeActuated = false;
     
@@ -22,7 +24,7 @@ public class Intestines extends SubsystemBase {
     }
 
     public void actuateIntake(boolean on) {
-        intakeSolenoid.set(on);
+        // intakeSolenoid.set(on);
         isIntakeActuated = on;
     }
 
@@ -36,5 +38,6 @@ public class Intestines extends SubsystemBase {
 
     @Override
     public void periodic() {
+        SmartDashboard.putBoolean("Magazine Switch", isBallInQueue());
     }
 }

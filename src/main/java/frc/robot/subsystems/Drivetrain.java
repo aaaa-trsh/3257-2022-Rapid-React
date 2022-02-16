@@ -31,7 +31,6 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.MotorController;
-import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -41,6 +40,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.FieldConstants;
+import frc.robot.Conversions.TalonFXConversions;
 
 public class Drivetrain extends SubsystemBase {
     private WPI_TalonFX backLeft = new WPI_TalonFX(DriveConstants.backLeftPort);
@@ -67,10 +67,6 @@ public class Drivetrain extends SubsystemBase {
     private double headingSnapshot;
 
     private Field2d field = new Field2d();
-    private DifferentialDrivetrainSim drivetrainSim;
-    private double gyroSimAngle = 0;
-    private double leftEncoderSimVelocity = 0, rightEncoderSimVelocity = 0;
-    private double leftEncoderSimPosition = 0, rightEncoderSimPosition = 0;
 
     public Drivetrain() {
         // Calibrate n reset the gyro
@@ -110,31 +106,14 @@ public class Drivetrain extends SubsystemBase {
         backRight.setInverted(InvertType.FollowMaster);
         backRight.setNeutralMode(NeutralMode.Coast);
     
-        if (RobotBase.isSimulation()) { // If our robot is simulated
-            // This class simulates our drivetrain's motion around the field.
-            drivetrainSim = new DifferentialDrivetrainSim(
-                LinearSystemId.identifyDrivetrainSystem(
-                    DriveConstants.vVoltSecondsPerMeter,
-                    DriveConstants.aVoltSecondsSquaredPerMeter,
-                    DriveConstants.vVoltSecondsPerRadian,
-                    DriveConstants.aVoltSecondsSquaredPerRadian
-                ),
-                DriveConstants.driveGearbox,
-                1./DriveConstants.gearboxRatio,
-                DriveConstants.trackwidth,
-                DriveConstants.wheelDiameter / 2.0,
-                VecBuilder.fill(0, 0, 0.0001, 0.1, 0.1, 0.005, 0.005)
-            );
-            
-        }
         SmartDashboard.putData("Field", field);
     }
     
     @Override
     public void periodic() {
-        // odometry.update(Rotation2d.fromDegrees(getHeading()), getLeftEncoderPosition(), getRightEncoderPosition());
-        odometry.update(Rotation2d.fromDegrees(getHeading()), new DifferentialDriveWheelSpeeds(getLeftEncoderVelocity(), getRightEncoderVelocity()), getLeftEncoderPosition(), getRightEncoderPosition());
-        field.setRobotPose(new Pose2d(getPose().getX(), getPose().getY(), getPose().getRotation()));
+        odometry.update(Rotation2d.fromDegrees(getHeading()), getLeftEncoderPosition(), getRightEncoderPosition());
+        // odometry.update(Rotation2d.fromDegrees(getHeading()), new DifferentialDriveWheelSpeeds(getLeftEncoderVelocity(), getRightEncoderVelocity()), getLeftEncoderPosition(), getRightEncoderPosition());
+        field.setRobotPose(getPose());
 
         SmartDashboard.putData("field", field);
         SmartDashboard.putNumber("right pos", getRightEncoderPosition());
@@ -142,25 +121,12 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putNumber("gyro", getHeading());
     }
 
-    @Override
-    public void simulationPeriodic() {
-        drivetrainSim.setInputs(frontLeft.get() * RobotController.getBatteryVoltage(), frontRight.get() * RobotController.getBatteryVoltage());
-        drivetrainSim.update(0.020);
-
-        // Encoders
-        leftEncoderSimVelocity = (drivetrainSim.getLeftVelocityMetersPerSecond());
-        leftEncoderSimPosition = metersToNative(drivetrainSim.getLeftPositionMeters());
-        rightEncoderSimVelocity = (drivetrainSim.getRightVelocityMetersPerSecond());
-        rightEncoderSimPosition = metersToNative(drivetrainSim.getRightPositionMeters());
-        gyroSimAngle = -drivetrainSim.getHeading().getDegrees();
-    }
-
     public void tankDriveVolts(double left, double right) { tankDrive(left / 12, right / 12);  }
     public void tankDrive(double left, double right) { differentialDrive.tankDrive(left, right); }
     
     public void setWheelRPM(double leftRPM, double rightRPM) {
-        frontLeft.set(TalonFXControlMode.Velocity, leftRPM * 2048. / 600.);
-        frontRight.set(TalonFXControlMode.Velocity, rightRPM * 2048. / 600.);
+        frontLeft.set(TalonFXControlMode.Velocity, TalonFXConversions.RPM2Native(leftRPM));
+        frontRight.set(TalonFXControlMode.Velocity, TalonFXConversions.RPM2Native(rightRPM));
         differentialDrive.feed();
     }
 
@@ -177,8 +143,8 @@ public class Drivetrain extends SubsystemBase {
     public void setNeutralMode(NeutralMode mode) {
         frontLeft.setNeutralMode(mode);
         frontRight.setNeutralMode(mode);
-        // backLeft.setNeutralMode(mode);
-        // backRight.setNeutralMode(mode);
+        backLeft.setNeutralMode(mode);
+        backRight.setNeutralMode(mode);
     }
 
     public void setSlowMode(boolean on) { differentialDrive.setMaxOutput(on ? 0.2 : 1); }
@@ -211,9 +177,7 @@ public class Drivetrain extends SubsystemBase {
             },
             this
         ).andThen(()->this.tankDrive(0, 0));
-
     }
-
     public Command DriveTrajectoryToHub(double hubDistance) {
         TrajectoryConfig config = new TrajectoryConfig(DriveConstants.vVoltSecondsPerMeter, DriveConstants.aVoltSecondsSquaredPerMeter);
         
@@ -289,30 +253,30 @@ public class Drivetrain extends SubsystemBase {
     }
 
     /* CONVERSIONS */
-    public static double nativeToMeters(double counts) { 
+    public static double nativePositionToMeters(double nativeUnits) { 
         // Helper function to convert native units (encoder counts) to meters for odometry
-        double wheelRotations = ((double)counts / DriveConstants.encoderCountsPerRotation) * DriveConstants.gearboxRatio;
+        double wheelRotations = TalonFXConversions.Native2Rotations(nativeUnits) * DriveConstants.gearboxRatio;
         return wheelRotations * (Math.PI * DriveConstants.wheelDiameter);
     }
 
-    public static double metersPerSecondToNative(double metersPerSecond, int hertz) { 
-        // Helper function to convert from meters per seconds to encoder units per epoch for PID'ing
-        double wheelRotationsPerSecond = metersPerSecond / (Math.PI * DriveConstants.wheelDiameter);
-        double motorRotationsPerSecond = wheelRotationsPerSecond * DriveConstants.gearboxRatio;
-        return (int)((motorRotationsPerSecond / hertz) * DriveConstants.encoderCountsPerRotation);
-    }
-
-    public static double metersPerSecondToNative(double metersPerSecond) { return metersPerSecondToNative(metersPerSecond, 10); } 
-
-    public static double metersToNative(double meters) { 
+    public static double metersToNativePosition(double meters) { 
         // Helper function to convert from meters to native encoder units for PID'ing
         double wheelRotations = meters / (Math.PI * DriveConstants.wheelDiameter);
-        double motorRotations = wheelRotations * DriveConstants.gearboxRatio;
-        return (int)(motorRotations * DriveConstants.encoderCountsPerRotation);
+        double motorRotations = wheelRotations / DriveConstants.gearboxRatio;
+        return TalonFXConversions.Rotations2Native(motorRotations);
+    }
+    
+    public static double metersPerSecondToNative(double metersPerSecond) { 
+        // Helper function to convert from meters per seconds to encoder units per epoch for PID'ing
+        double wheelRPS = metersPerSecond / (Math.PI * DriveConstants.wheelDiameter);
+        double motorRPS = wheelRPS * DriveConstants.gearboxRatio;
+        return TalonFXConversions.RPM2Native(motorRPS / 60)
     }
 
-    public static double nativeToMeters(double meters, boolean inverted) { 
-        return inverted ? nativeToMeters(meters) * -1 : nativeToMeters(meters);
+    public static double nativeToMetersPerSecond(double nativeUnits) { 
+        // Helper function to convert from meters per seconds to encoder units per epoch for PID'ing
+        double motorRPS = TalonFXConversions.Native2RPM(nativeUnits) * 60 / (double)DriveConstants.gearboxRatio;
+        return motorRPS * (Math.PI * DriveConstants.wheelDiameter);
     }
 
     /* BOILERPLATE */
@@ -323,34 +287,24 @@ public class Drivetrain extends SubsystemBase {
 
     /* Sensor Getters */
     public double getLeftEncoderPosition() { 
-        if (RobotBase.isSimulation()) { return nativeToMeters(leftEncoderSimPosition); }
-        return nativeToMeters((frontLeft.getSelectedSensorPosition() + backLeft.getSelectedSensorPosition())/2., DriveConstants.leftEncoderInverted);
+        return nativePositionToMeters((frontLeft.getSelectedSensorPosition() + backLeft.getSelectedSensorPosition())/2.);
     }
     public double getLeftEncoderVelocity() {
-        if (RobotBase.isSimulation()) { return nativeToMeters(leftEncoderSimVelocity); } 
-        return nativeToMeters((frontLeft.getSelectedSensorVelocity() + backLeft.getSelectedSensorVelocity())/2. * 10);
+        return nativePositionToMeters((frontLeft.getSelectedSensorVelocity() + backLeft.getSelectedSensorVelocity())/2. * 10);
     }
 
     public double getRightEncoderPosition() { 
-        if (RobotBase.isSimulation()) { return nativeToMeters(rightEncoderSimPosition); }
-        return nativeToMeters((frontRight.getSelectedSensorPosition() + backRight.getSelectedSensorPosition())/2., DriveConstants.rightEncoderInverted); 
+        return nativePositionToMeters((frontRight.getSelectedSensorPosition() + backRight.getSelectedSensorPosition())/2.); 
     }
-    public double getRightEncoderVelocity() {
-        if (RobotBase.isSimulation()) { return nativeToMeters(rightEncoderSimVelocity); } 
-        return nativeToMeters((frontRight.getSelectedSensorVelocity() + backRight.getSelectedSensorVelocity())/2. * 10); 
+    public double getRightEncoderVelocity() {   
+        return nativePositionToMeters((frontRight.getSelectedSensorVelocity() + backRight.getSelectedSensorVelocity())/2. * 10); 
     }
     
     public double getHeading() {
-        if (RobotBase.isSimulation()) { return DriveConstants.invertGyro ? -gyroSimAngle : gyroSimAngle; } 
         return DriveConstants.invertGyro ? -gyro.getAngle() : gyro.getAngle();
     }
     
     public double getHeadingRate() { return DriveConstants.invertGyro ? -gyro.getRate() : gyro.getRate(); }
-    public void takeHeadingSnapshot() { headingSnapshot = getHeading(); }
-    public double getHeadingSnapshot() { return headingSnapshot; }
-
-    // This is gross
-    public ArrayList<TalonFX> getTalonFXs() { return new ArrayList<> (Arrays.asList(new TalonFX[] { backLeft, backRight, frontLeft, frontRight })); }
 
     /* Odometry Helper Functions */
     public DifferentialDriveKinematics getKinematics() { return kinematics; }

@@ -66,8 +66,8 @@ public final class Constants {
 
     public static class ShooterConstants {
         /* Motor Ports */
-        public static int flywheel1Port = 7;
-        public static int flywheel2Port = 8;
+        public static int flywheel1Port = 1;
+        public static int flywheel2Port = 2;
 
         /* Flywheel ID - Get from sysid! */
         public static double flywheelV = 0.023;
@@ -110,7 +110,7 @@ public final class Constants {
         public static int intakeSolenoidPort = 0;
         public static int intakeSparkPort = 0;
 
-        public static int magazinePort = 0;
+        public static int magazinePort = 5;
         public static int magazineSwitchPort = 0;
         
     }
