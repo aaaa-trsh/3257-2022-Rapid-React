@@ -17,11 +17,6 @@ public final class Constants {
         public static int backRightPort = 4;
 
         /* PID Controller Gains */
-        public static double driveP = 0.0147;
-        public static double driveI = 0;
-        public static double driveD = 0;
-        public static double driveF = 0;
-
         public static double talonFXP = 0.2;
         public static double talonFXI = 0.0;
         public static double talonFXD = 2;
@@ -29,13 +24,7 @@ public final class Constants {
 
         public static double ramseteB = 2;
         public static double ramseteZeta = .7;
-
-        public static double trackingGain = 0.1;
-        public static double shootingTrackingGain = 0.05;
-        public static double shootingTrackingFeedForward = 1;
-        
-        public static double turnPIDTolerance;
-        
+                
         /* Other Settings */
         public static boolean leftEncoderInverted = true;
         public static boolean rightEncoderInverted = false;
@@ -52,7 +41,6 @@ public final class Constants {
 
         /* Physical Constants */
         public static double wheelDiameter = Units.inchesToMeters(4);
-        public static double encoderCountsPerRotation = 2048/4;
         public static double gearboxRatio = 0.1;
         public static double trackwidth = Units.feetToMeters(1.9022538253313759);
         public static boolean invertGyro = true; // Set to counterclockwise is positive
@@ -66,8 +54,8 @@ public final class Constants {
 
     public static class ShooterConstants {
         /* Motor Ports */
-        public static int upperFlywheelPort = 1;
-        public static int lowerFlywheelPort = 2;
+        public static int upperFlywheelPort = 8;
+        public static int lowerFlywheelPort = 6;
 
         /* Flywheel ID - Get from sysid! */
         public static double flywheelV = 0.023;
@@ -79,6 +67,10 @@ public final class Constants {
         
         // rotations of motor/rotations of flywheel <- higher if geared down!
         public static double flywheelGearing = 1.0;
+        
+        public static double P = 0.;
+        public static double I = 0.;
+        public static double D = 0.;
     }
 
     public static class ClimbConstants {
@@ -108,9 +100,9 @@ public final class Constants {
     }
     public static class IntestineConstants {
         public static int intakeSolenoidPort = 0;
-        public static int intakeSparkPort = 0;
+        public static int intakeSparkPort = 2;
 
-        public static int magazinePort = 3;
+        public static int magazinePort = 11;
         public static int magazineSwitchPort = 0;
         
     }
@@ -118,7 +110,6 @@ public final class Constants {
      * YOINKED FROM 6238 MECHANICAL ADVANTAGE
      */
     public static class FieldConstants {
-
         // Field dimensions
         public static final double fieldLength = Units.inchesToMeters(54.0 * 12.0);
         public static final double fieldWidth = Units.inchesToMeters(27.0 * 12.0);

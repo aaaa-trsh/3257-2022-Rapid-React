@@ -7,7 +7,7 @@ public class Conversions {
         }
 
         public static double Native2RPM(double units) {
-            return units / 2048. * 10. * 60.;
+            return units / 2048. * 600.; // 0 - 100
         }
 
         public static double Native2Rotations(double units) {

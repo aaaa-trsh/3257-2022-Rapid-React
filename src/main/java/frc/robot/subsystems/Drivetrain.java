@@ -60,8 +60,8 @@ public class Drivetrain extends SubsystemBase {
 
     private SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(DriveConstants.sVolts, DriveConstants.vVoltSecondsPerMeter, DriveConstants.aVoltSecondsSquaredPerMeter);
 
-    private PIDController leftController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
-    private PIDController rightController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
+    // private PIDController leftController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
+    // private PIDController rightController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
 
     private AHRS gyro = new AHRS();
 
@@ -156,101 +156,6 @@ public class Drivetrain extends SubsystemBase {
     }
     public void resetOdometry() { this.resetOdometry(new Pose2d()); }
 
-
-    public Command PathCommand(Trajectory trajectory, boolean resetAtStart) {
-        if (resetAtStart)
-            resetOdometry(trajectory.getInitialPose());
-
-        return new RamseteCommand(
-            trajectory,
-            this::getPose,
-            new RamseteController(DriveConstants.ramseteB, DriveConstants.ramseteZeta),
-            this.getFeedForward(),
-            this.getKinematics(),
-            this::getWheelSpeeds,
-            this.getLeftController(),
-            this.getRightController(),
-            (leftVolts, rightVolts) -> {
-                System.out.println("l volts: " + leftVolts + " | r volts: " + rightVolts);
-                this.tankDriveVolts(-leftVolts, -rightVolts);
-            },
-            this
-        ).andThen(()->this.tankDrive(0, 0));
-    }
-    public Command DriveTrajectoryToHub(double hubDistance) {
-        TrajectoryConfig config = new TrajectoryConfig(DriveConstants.vVoltSecondsPerMeter, DriveConstants.aVoltSecondsSquaredPerMeter);
-        
-        Translation2d hubDisplacement = getPose().getTranslation().minus(FieldConstants.hubCenter);
-        double angle = Math.atan(hubDisplacement.getY()/hubDisplacement.getX());
-        Translation2d normalizedDisplacement = hubDisplacement.times(
-            1 / Math.sqrt(
-                Math.pow(hubDisplacement.getX(), 2) + 
-                Math.pow(hubDisplacement.getY(), 2)
-            )
-        );
-        Pose2d end = new Pose2d(normalizedDisplacement.times(hubDistance), Rotation2d.fromDegrees(angle * 180./Math.PI));
-        
-        return PathCommand(
-            TrajectoryGenerator.generateTrajectory(
-                this.getPose(), 
-                null, 
-                end,
-                config
-            ), 
-            false
-        );
-    }
-    public Command DriveLineToHub(double hubDistance) {
-        Translation2d hubDisplacement = getPose().getTranslation().minus(FieldConstants.hubCenter);
-        double angle = Math.atan(hubDisplacement.getY()/hubDisplacement.getX());
-
-        DoubleSupplier distanceSupplier = () -> {
-            return Math.sqrt(
-                Math.pow(getPose().getTranslation().minus(FieldConstants.hubCenter).getX(), 2) + 
-                Math.pow(getPose().getTranslation().minus(FieldConstants.hubCenter).getY(), 2)
-            );
-        };
-
-        PIDController turnController = new PIDController(
-            DriveConstants.driveP, 
-            DriveConstants.driveI,
-            DriveConstants.driveD
-        );
-        turnController.enableContinuousInput(0, 180);
-        turnController.setTolerance(2);
-        return new SequentialCommandGroup(
-            new PIDCommand(
-                turnController,
-                this::getHeading, 
-                ()->angle,
-                (output)->{
-                    this.arcadeDrive(
-                        Math.abs(distanceSupplier.getAsDouble()) > 0.2 ? (
-                            distanceSupplier.getAsDouble() > 0 ? 1 : -1
-                        ) : 0,
-                        output
-                    );
-                },
-                this
-            ),
-            new PIDCommand(
-                getLeftController(),
-                distanceSupplier, 
-                ()->hubDistance,
-                (output)->{
-                    this.arcadeDrive(
-                        0,
-                        output
-                    );
-                },
-                this
-            )
-            /**
-             * Add a vision align PID over here to fine tune shots if needed
-             */
-        );
-    }
-
     /* CONVERSIONS */
     public static double nativePositionToMeters(double nativeUnits) { 
         // Helper function to convert native units (encoder counts) to meters for odometry
@@ -280,8 +185,8 @@ public class Drivetrain extends SubsystemBase {
 
     /* BOILERPLATE */
     /* PID Getters */
-    public PIDController getLeftController() { return leftController; }
-    public PIDController getRightController() { return rightController; }
+    public PIDController getLeftController() { return null;/*leftController;*/ }
+    public PIDController getRightController() { return null;/*rightController;*/ }
     public SimpleMotorFeedforward getFeedForward() { return feedforward; }
 
     /* Sensor Getters */

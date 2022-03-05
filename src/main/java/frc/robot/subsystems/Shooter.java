@@ -9,6 +9,7 @@ import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.BangBangController;
 import edu.wpi.first.math.controller.LinearQuadraticRegulator;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.KalmanFilter;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.system.LinearSystem;
@@ -26,6 +27,7 @@ public class Shooter extends SubsystemBase {
     
     // ooga booga revert to bangbang control
     private BangBangController controller = new BangBangController();
+    // private PIDController controller = new PIDController(ShooterConstants.P, ShooterConstants.I, ShooterConstants.D);
     private double lowerRPM, upperRPM;
     // private LinearSystem<N1, N1, N1> flywheelPlant = LinearSystemId.identifyVelocitySystem(ShooterConstants.flywheelV, ShooterConstants.flywheelA);
 
@@ -65,6 +67,9 @@ public class Shooter extends SubsystemBase {
         lowerFlywheel.configFactoryDefault();
         upperFlywheel.configFactoryDefault();
 
+        lowerFlywheel.configOpenloopRamp(0.5);
+        upperFlywheel.configOpenloopRamp(0.5);
+
         lowerFlywheel.setInverted(InvertType.InvertMotorOutput);
         lowerFlywheel.setNeutralMode(NeutralMode.Coast);
 
@@ -79,10 +84,17 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // lowerFlywheel.set(controller.calculate(TalonFXConversions.Native2RPM(lowerFlywheel.getSelectedSensorVelocity()), lowerRPM));
-        // upperFlywheel.set(controller.calculate(TalonFXConversions.Native2RPM(upperFlywheel.getSelectedSensorVelocity()), upperRPM));
-        lowerFlywheel.set(ControlMode.PercentOutput, lowerRPM);
-        upperFlywheel.set(ControlMode.PercentOutput, upperRPM);
+        if (lowerRPM != 0)
+            lowerFlywheel.set(controller.calculate(TalonFXConversions.Native2RPM(lowerFlywheel.getSelectedSensorVelocity()), lowerRPM));
+        else
+            lowerFlywheel.set(0);
+
+        if (upperRPM != 0)
+            upperFlywheel.set(controller.calculate(TalonFXConversions.Native2RPM(upperFlywheel.getSelectedSensorVelocity()), upperRPM));
+        else
+            upperFlywheel.set(0);
+            // lowerFlywheel.set(ControlMode.PercentOutput, lowerRPM);
+        // upperFlywheel.set(ControlMode.PercentOutput, upperRPM);
         SmartDashboard.putNumber("lower flywheel rpm", TalonFXConversions.Native2RPM(lowerFlywheel.getSelectedSensorVelocity()));
         SmartDashboard.putNumber("upper flywheel rpm", TalonFXConversions.Native2RPM(upperFlywheel.getSelectedSensorVelocity()));
 
@@ -91,13 +103,10 @@ public class Shooter extends SubsystemBase {
 
         // flywheel1Loop.setNextR(VecBuilder.fill(flywheelSpinning ? ShooterConstants.spinupRadPerSec : 0.));
         // flywheel2Loop.setNextR(VecBuilder.fill(flywheelSpinning ? ShooterConstants.spinupRadPerSec : 0.));
-
         // flywheel1Loop.correct(VecBuilder.fill(2. * Math.PI * flywheel1TalonFX.getSelectedSensorVelocity() / DriveConstants.encoderCountsPerRotation));
         // flywheel2Loop.correct(VecBuilder.fill(2. * Math.PI * flywheel2TalonFX.getSelectedSensorVelocity() / DriveConstants.encoderCountsPerRotation));
-
         // flywheel1Loop.predict(0.020);
         // flywheel2Loop.predict(0.020);
-
         // flywheel1TalonFX.setVoltage(flywheel1Loop.getU(0));
         // flywheel2TalonFX.setVoltage(flywheel2Loop.getU(0));
 
