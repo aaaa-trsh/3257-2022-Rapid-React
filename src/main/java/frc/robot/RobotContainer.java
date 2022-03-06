@@ -1,15 +1,10 @@
 package frc.robot;
 
-import frc.robot.Constants.IOConstants;
-import frc.robot.subsystems.Drivetrain;
-import frc.robot.subsystems.Intestines;
-import frc.robot.subsystems.Shooter;
-import frc.robot.utils.control.XboxJoystick;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
+import frc.robot.Constants.IOConstants;
+import frc.robot.subsystems.Shooter;
+import frc.robot.utils.control.XboxJoystick;
 
 public class RobotContainer {
     // private final Drivetrain drivetrain  = new Drivetrain();

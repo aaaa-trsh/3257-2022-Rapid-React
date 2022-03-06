@@ -1,80 +1,67 @@
 package frc.robot.subsystems;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.TalonFXControlMode;
+import com.ctre.phoenix.motorcontrol.TalonFXFeedbackDevice;
+import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 
-import edu.wpi.first.math.Nat;
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.controller.BangBangController;
-import edu.wpi.first.math.controller.LinearQuadraticRegulator;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.estimator.KalmanFilter;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.system.LinearSystem;
-import edu.wpi.first.math.system.LinearSystemLoop;
-import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants;
 import frc.robot.Constants.ShooterConstants;
+import frc.robot.utils.TunableNumber;
 import frc.robot.utils.Conversions.TalonFXConversions;
 
 public class Shooter extends SubsystemBase {
     private WPI_TalonFX lowerFlywheel = new WPI_TalonFX(ShooterConstants.lowerFlywheelPort);
     private WPI_TalonFX upperFlywheel = new WPI_TalonFX(ShooterConstants.upperFlywheelPort);
     
-    // ooga booga revert to bangbang control
-    private BangBangController controller = new BangBangController();
-    // private PIDController controller = new PIDController(ShooterConstants.P, ShooterConstants.I, ShooterConstants.D);
+    // private final TunableNumber maxVel = new TunableNumber("Shooter/MaxRPM");
+    // private final TunableNumber maxAccel = new TunableNumber("Shooter/MaxAccelRPMPerSec2");
+    // private final TunableNumber maxJerk = new TunableNumber("Shooter/MaxJerkRPMPerSec3");
+    private final TunableNumber p = new TunableNumber("Shooter/P");
+    private final TunableNumber i = new TunableNumber("Shooter/I");
+    private final TunableNumber d = new TunableNumber("Shooter/D");
+    private final TunableNumber f = new TunableNumber("Shooter/F");
+    private final TunableNumber tolerance = new TunableNumber("Shooter/ToleranceRPM");
+    
     private double lowerRPM, upperRPM;
-    // private LinearSystem<N1, N1, N1> flywheelPlant = LinearSystemId.identifyVelocitySystem(ShooterConstants.flywheelV, ShooterConstants.flywheelA);
-
-    // private KalmanFilter<N1, N1, N1> flywheel1Observer = new KalmanFilter<>(
-    //     Nat.N1(), Nat.N1(),
-    //     flywheelPlant,
-    //     VecBuilder.fill(3.0),
-    //     VecBuilder.fill(0.01),
-    //     0.02
-    // );
-    // private KalmanFilter<N1, N1, N1> flywheel2Observer = new KalmanFilter<>(
-    //     Nat.N1(), Nat.N1(),
-    //     flywheelPlant,
-    //     VecBuilder.fill(3.0),
-    //     VecBuilder.fill(0.01),
-    //     0.02
-    // );
-
-    // private LinearQuadraticRegulator<N1, N1, N1> flywheel1Controller = new LinearQuadraticRegulator<>(
-    //     flywheelPlant,
-    //     VecBuilder.fill(8.0),
-    //     VecBuilder.fill(12.0),
-    //     0.02
-    // );
-    // private LinearQuadraticRegulator<N1, N1, N1> flywheel2Controller = new LinearQuadraticRegulator<>(
-    //     flywheelPlant,
-    //     VecBuilder.fill(8.0),
-    //     VecBuilder.fill(12.0),
-    //     0.02
-    // );
-
-    // private LinearSystemLoop<N1, N1, N1> flywheel1Loop = new LinearSystemLoop<>(flywheelPlant, flywheel1Controller, flywheel1Observer, 12.0, 0.020);
-    // private LinearSystemLoop<N1, N1, N1> flywheel2Loop = new LinearSystemLoop<>(flywheelPlant, flywheel2Controller, flywheel2Observer, 12.0, 0.020);
-    // private boolean flywheelSpinning = false;
 
     public Shooter() {
+        // maxVel.setDefault(2650.0);
+        // maxAccel.setDefault(2000.0);
+        // maxJerk.setDefault(2500.0);
+        p.setDefault(0.00008);
+        i.setDefault(0.0);
+        d.setDefault(0.0);
+        f.setDefault(0.0);
+        tolerance.setDefault(50);
+
+        TalonFXConfiguration config = new TalonFXConfiguration();
+        config.nominalOutputForward = 0;
+        config.nominalOutputReverse = 0;
+        config.peakOutputForward = 1;
+        config.peakOutputReverse = -1;
+        config.slot0.kP = p.get();
+        config.slot0.kI = i.get();
+        config.slot0.kD = d.get();
+        config.slot0.kF = f.get();
+        config.closedloopRamp = 0.1;
+        config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
+
+        // lower flywheel config
         lowerFlywheel.configFactoryDefault();
-        upperFlywheel.configFactoryDefault();
-
-        lowerFlywheel.configOpenloopRamp(0.5);
-        upperFlywheel.configOpenloopRamp(0.5);
-
         lowerFlywheel.setInverted(InvertType.InvertMotorOutput);
         lowerFlywheel.setNeutralMode(NeutralMode.Coast);
+        lowerFlywheel.configAllSettings(config);
 
+        // upper flywheel config
+        upperFlywheel.configFactoryDefault();
         upperFlywheel.setInverted(InvertType.None);
         upperFlywheel.setNeutralMode(NeutralMode.Coast);
+        upperFlywheel.configAllSettings(config);
     }
     
     public void setShooterSpeeds(double lowerRPM, double upperRPM) {
@@ -84,31 +71,30 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (lowerRPM != 0)
-            lowerFlywheel.set(controller.calculate(TalonFXConversions.Native2RPM(lowerFlywheel.getSelectedSensorVelocity()), lowerRPM));
-        else
-            lowerFlywheel.set(0);
+        if (p.hasChanged() | i.hasChanged() | d.hasChanged() | f.hasChanged()) {
+            lowerFlywheel.config_kP(0, p.get(), Constants.timeout);
+            lowerFlywheel.config_kI(0, i.get(), Constants.timeout);
+            lowerFlywheel.config_kD(0, d.get(), Constants.timeout);
+            lowerFlywheel.config_kF(0, f.get(), Constants.timeout);
 
-        if (upperRPM != 0)
-            upperFlywheel.set(controller.calculate(TalonFXConversions.Native2RPM(upperFlywheel.getSelectedSensorVelocity()), upperRPM));
-        else
-            upperFlywheel.set(0);
-            // lowerFlywheel.set(ControlMode.PercentOutput, lowerRPM);
-        // upperFlywheel.set(ControlMode.PercentOutput, upperRPM);
+            upperFlywheel.config_kP(0, p.get(), Constants.timeout);
+            upperFlywheel.config_kI(0, i.get(), Constants.timeout);
+            upperFlywheel.config_kD(0, d.get(), Constants.timeout);
+            upperFlywheel.config_kF(0, f.get(), Constants.timeout);
+        }
+        
+        if (lowerRPM > 0 | upperRPM > 0) {
+            lowerFlywheel.set(TalonFXControlMode.Velocity, TalonFXConversions.RPM2Native(lowerRPM));
+            upperFlywheel.set(TalonFXControlMode.Velocity, TalonFXConversions.RPM2Native(upperRPM));
+        } else {
+            lowerFlywheel.set(TalonFXControlMode.PercentOutput, 0);
+            upperFlywheel.set(TalonFXControlMode.PercentOutput, 0);
+        }
+        
         SmartDashboard.putNumber("lower flywheel rpm", TalonFXConversions.Native2RPM(lowerFlywheel.getSelectedSensorVelocity()));
         SmartDashboard.putNumber("upper flywheel rpm", TalonFXConversions.Native2RPM(upperFlywheel.getSelectedSensorVelocity()));
 
         SmartDashboard.putNumber("lower flywheel target", lowerRPM);
         SmartDashboard.putNumber("upper flywheel target", upperRPM);
-
-        // flywheel1Loop.setNextR(VecBuilder.fill(flywheelSpinning ? ShooterConstants.spinupRadPerSec : 0.));
-        // flywheel2Loop.setNextR(VecBuilder.fill(flywheelSpinning ? ShooterConstants.spinupRadPerSec : 0.));
-        // flywheel1Loop.correct(VecBuilder.fill(2. * Math.PI * flywheel1TalonFX.getSelectedSensorVelocity() / DriveConstants.encoderCountsPerRotation));
-        // flywheel2Loop.correct(VecBuilder.fill(2. * Math.PI * flywheel2TalonFX.getSelectedSensorVelocity() / DriveConstants.encoderCountsPerRotation));
-        // flywheel1Loop.predict(0.020);
-        // flywheel2Loop.predict(0.020);
-        // flywheel1TalonFX.setVoltage(flywheel1Loop.getU(0));
-        // flywheel2TalonFX.setVoltage(flywheel2Loop.getU(0));
-
     }
 }

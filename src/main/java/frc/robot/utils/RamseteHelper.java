@@ -41,7 +41,7 @@ public class RamseteHelper {
             drivetrain.getRightController(),
             (leftVolts, rightVolts) -> {
                 System.out.println("l volts: " + leftVolts + " | r volts: " + rightVolts);
-                drivetrain.tankDriveVolts(-leftVolts, -rightVolts);
+                drivetrain.tankDrive(-leftVolts/12, -rightVolts/12);
             },
             drivetrain
         ).andThen(()->drivetrain.tankDrive(0, 0));

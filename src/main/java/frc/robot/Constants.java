@@ -8,6 +8,8 @@ import edu.wpi.first.math.util.Units;
 import frc.robot.utils.GeomUtil;
 
 public final class Constants {
+    public static boolean tuning = false; 
+    public static int timeout = 30; 
     public static class DriveConstants { 
         /* Drive Ports */
         public static int frontLeftPort = 1;//1
@@ -15,12 +17,6 @@ public final class Constants {
         
         public static int frontRightPort = 3;
         public static int backRightPort = 4;
-
-        /* PID Controller Gains */
-        public static double talonFXP = 0.2;
-        public static double talonFXI = 0.0;
-        public static double talonFXD = 2;
-        public static double talonFXF = 0;
 
         public static double ramseteB = 2;
         public static double ramseteZeta = .7;

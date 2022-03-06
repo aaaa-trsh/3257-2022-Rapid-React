@@ -3,11 +3,11 @@ package frc.robot.utils;
 public class Conversions {
     public static class TalonFXConversions {
         public static double RPM2Native(double rpm) {
-            return rpm * 2048. / 10. / 60.;
+            return rpm * 2048. / 600.;
         }
 
         public static double Native2RPM(double units) {
-            return units / 2048. * 600.; // 0 - 100
+            return units / 2048. * 600.;
         }
 
         public static double Native2Rotations(double units) {
