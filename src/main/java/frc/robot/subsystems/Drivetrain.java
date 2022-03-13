@@ -36,9 +36,9 @@ public class Drivetrain extends SubsystemBase {
     private DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(new Rotation2d(), new Pose2d());
     private SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(DriveConstants.sVolts, DriveConstants.vVoltSecondsPerMeter, DriveConstants.aVoltSecondsSquaredPerMeter);
 
-    private final TunableNumber p = new TunableNumber("Drive/P");
-    private final TunableNumber d = new TunableNumber("Drive/D");
-    private final TunableNumber f = new TunableNumber("Drive/F");
+    // private final TunableNumber p = new TunableNumber("Drive/P");
+    // private final TunableNumber d = new TunableNumber("Drive/D");
+    // private final TunableNumber f = new TunableNumber("Drive/F");
 
     // private PIDController leftController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
     // private PIDController rightController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
@@ -52,19 +52,19 @@ public class Drivetrain extends SubsystemBase {
         gyro.calibrate();
         gyro.reset();
         
-        p.setDefault(0.00008);
-        d.setDefault(0);
-        f.setDefault(0);
+        // p.setDefault(0.00008);
+        // d.setDefault(0);
+        // f.setDefault(0);
 
         TalonFXConfiguration config = new TalonFXConfiguration();
-        config.nominalOutputForward = 0;
-        config.nominalOutputReverse = 0;
-        config.peakOutputForward = 1;
-        config.peakOutputReverse = -1;
-        config.slot0.kP = p.get();
-        config.slot0.kI = 0;
-        config.slot0.kD = d.get();
-        config.slot0.kF = f.get();
+        // config.nominalOutputForward = 0;
+        // config.nominalOutputReverse = 0;
+        // config.peakOutputForward = 1;
+        // config.peakOutputReverse = -1;
+        // config.slot0.kP = p.get();
+        // config.slot0.kI = 0;
+        // config.slot0.kD = d.get();
+        // config.slot0.kF = f.get();
         config.closedloopRamp = 0.1;
         config.openloopRamp = 0.5;
         config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
@@ -121,7 +121,7 @@ public class Drivetrain extends SubsystemBase {
     }
 
     public void arcadeDrive(double throttle, double turn) {
-        System.out.println("throttle " + Math.round(throttle*10)/10. + " turn " + Math.round(turn*10)/10. + " pose " + getPose());
+        // System.out.println("throttle " + Math.round(throttle*10)/10. + " turn " + Math.round(turn*10)/10. + " pose " + getPose());
         differentialDrive.arcadeDrive(throttle, turn);
     }
 

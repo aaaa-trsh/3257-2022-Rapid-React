@@ -4,18 +4,38 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
-
     {
-      "type": "wpilib",
-      "name": "WPILib Desktop Debug",
-      "request": "launch",
-      "desktop": true,
+        "type": "java",
+        "name": "Launch DoubleInterpolable",
+        "request": "launch",
+        "mainClass": "frc.robot.utils.DoubleInterpolable",
+        "projectName": "trsh-frc-2022"
     },
     {
-      "type": "wpilib",
-      "name": "WPILib roboRIO Debug",
-      "request": "launch",
-      "desktop": false,
+        "type": "java",
+        "name": "Launch TunableNumber",
+        "request": "launch",
+        "mainClass": "frc.robot.utils.TunableNumber",
+        "projectName": "trsh-frc-2022"
+    },
+    {
+        "type": "java",
+        "name": "Launch InterpolatingTreeMap",
+        "request": "launch",
+        "mainClass": "frc.robot.utils.InterpolatingTreeMap",
+        "projectName": "trsh-frc-2022"
+    },
+    {
+        "type": "wpilib",
+        "name": "WPILib Desktop Debug",
+        "request": "launch",
+        "desktop": true
+    },
+    {
+        "type": "wpilib",
+        "name": "WPILib roboRIO Debug",
+        "request": "launch",
+        "desktop": false
     }
-  ]
+]
 }

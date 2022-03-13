@@ -33,11 +33,11 @@ public class Shooter extends SubsystemBase {
         // maxVel.setDefault(2650.0);
         // maxAccel.setDefault(2000.0);
         // maxJerk.setDefault(2500.0);
-        p.setDefault(0.00008);
+        p.setDefault(0.14);
         i.setDefault(0.0);
-        d.setDefault(0.0);
-        f.setDefault(0.0);
-        tolerance.setDefault(50);
+        d.setDefault(0.1);
+        f.setDefault(0.5);
+        tolerance.setDefault(0);
 
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.nominalOutputForward = 0;
@@ -48,7 +48,7 @@ public class Shooter extends SubsystemBase {
         config.slot0.kI = i.get();
         config.slot0.kD = d.get();
         config.slot0.kF = f.get();
-        config.closedloopRamp = 0.1;
+        // config.closedloopRamp = 0.1;
         config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
 
         // lower flywheel config
@@ -68,6 +68,10 @@ public class Shooter extends SubsystemBase {
         this.lowerRPM = lowerRPM;
         this.upperRPM = upperRPM;
     }
+    
+    public void setSpeedsFromDistance() {
+
+    }
 
     @Override
     public void periodic() {
@@ -81,6 +85,12 @@ public class Shooter extends SubsystemBase {
             upperFlywheel.config_kI(0, i.get(), Constants.timeout);
             upperFlywheel.config_kD(0, d.get(), Constants.timeout);
             upperFlywheel.config_kF(0, f.get(), Constants.timeout);
+            System.out.println(
+                " P: " + p.get() + 
+                " I: " + i.get() + 
+                " D: " + d.get() + 
+                " F: " + f.get()
+            );
         }
         
         if (lowerRPM > 0 | upperRPM > 0) {
@@ -90,11 +100,14 @@ public class Shooter extends SubsystemBase {
             lowerFlywheel.set(TalonFXControlMode.PercentOutput, 0);
             upperFlywheel.set(TalonFXControlMode.PercentOutput, 0);
         }
+
+        // lowerFlywheel.set(TalonFXControlMode.PercentOutput, lowerRPM);
+        // upperFlywheel.set(TalonFXControlMode.PercentOutput, upperRPM);
         
         SmartDashboard.putNumber("lower flywheel rpm", TalonFXConversions.Native2RPM(lowerFlywheel.getSelectedSensorVelocity()));
         SmartDashboard.putNumber("upper flywheel rpm", TalonFXConversions.Native2RPM(upperFlywheel.getSelectedSensorVelocity()));
 
-        SmartDashboard.putNumber("lower flywheel target", lowerRPM);
-        SmartDashboard.putNumber("upper flywheel target", upperRPM);
+        SmartDashboard.putNumber("lower flywheel target", TalonFXConversions.RPM2Native(lowerRPM));
+        SmartDashboard.putNumber("upper flywheel target", TalonFXConversions.RPM2Native(upperRPM));
     }
 }

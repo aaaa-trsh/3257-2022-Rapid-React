@@ -8,7 +8,7 @@ import edu.wpi.first.math.util.Units;
 import frc.robot.utils.GeomUtil;
 
 public final class Constants {
-    public static boolean tuning = false; 
+    public static boolean tuning = true; 
     public static int timeout = 30; 
     public static class DriveConstants { 
         /* Drive Ports */
@@ -98,6 +98,7 @@ public final class Constants {
         public static int intakeSolenoidPort = 0;
         public static int intakeSparkPort = 2;
 
+        public static int intakeLiftSparkPort = 3;
         public static int magazinePort = 11;
         public static int magazineSwitchPort = 0;
         
