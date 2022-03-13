@@ -95,13 +95,14 @@ public final class Constants {
         public static double elbowA = 0;
     }
     public static class IntestineConstants {
-        public static int intakeSolenoidPort = 0;
-        public static int intakeSparkPort = 2;
-
-        public static int intakeLiftSparkPort = 3;
         public static int magazinePort = 11;
         public static int magazineSwitchPort = 0;
         
+    }
+
+    public static class IntakeConstants {
+        public static int rollerPort = 2;
+        public static int liftPort = 3;
     }
     /**
      * YOINKED FROM 6238 MECHANICAL ADVANTAGE

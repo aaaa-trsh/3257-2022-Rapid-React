@@ -1,4 +1,4 @@
-package frc.robot.utils;
+package frc.robot.utils.interpolables;
 
 import java.util.TreeMap;
 
@@ -10,6 +10,7 @@ public interface Interpolable<T> {
         public InterpolatingTreeMap(TreeMap<Double, Interpolable<T>> map) { this.map = map; }
         public void put(Double key, Interpolable<T> value) { map.put(key, value); }
         public String toString() { return map.toString(); }
+        public int size() { return map.size(); }
         public TreeMap<Double, Interpolable<T>> getMap() { return map; }
 
         public T interpolate(Double key) {
@@ -35,4 +36,12 @@ public interface Interpolable<T> {
     public T interpolate(T b, Double t);
     public Double inverseInterpolate(T b, T query);
     public T get();
+
+    public static double lerp(double a, double b, double t) {
+        return t * (b - a) + a;
+    }
+
+    public static double inverseLerp(double a, double b, double c) {
+        return (c - a) / (b - a);
+    }
 }

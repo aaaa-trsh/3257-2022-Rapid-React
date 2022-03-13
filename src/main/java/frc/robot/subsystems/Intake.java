@@ -4,50 +4,61 @@
 
 package frc.robot.subsystems;
 
-import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.PIDSubsystem;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
 import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.SparkMaxPIDController;
 
-import frc.robot.Constants;
-import frc.robot.utils.TunableNumber;
+import frc.robot.Constants.IntakeConstants;
+import frc.robot.utils.tunables.TunableNumber;
 
-public class Intake extends PIDSubsystem {
+public class Intake extends SubsystemBase {
+    private Spark rollerMotor = new Spark(IntakeConstants.rollerPort);
+    private CANSparkMax liftMotor = new  CANSparkMax(IntakeConstants.liftPort, CANSparkMaxLowLevel.MotorType.kBrushless);
 
-    private CANSparkMax intakeLift = new  CANSparkMax(Constants.IntestineConstants.intakeLiftSparkPort, CANSparkMaxLowLevel.MotorType.kBrushless);
-    private RelativeEncoder intakeEncoder;
-    // private TunableNumber upPos = new TunableNumber("Drive/P");
+    private RelativeEncoder liftEncoder;
+    private SparkMaxPIDController liftController;
+
+    private TunableNumber upPos = new TunableNumber("Intake/UpPosition", 0.);
+    private TunableNumber p = new TunableNumber("Intake/P", 0.);
+    private TunableNumber d = new TunableNumber("Intake/D", 0.);
+
+    private boolean intakeUp = false;
+
     public Intake() {
-            super(new PIDController(0, 0, 0));
-            super.disable();
-            intakeEncoder = intakeLift.getEncoder();
-            SmartDashboard.putNumber("intake winch pos", getMeasurement());
-        }
+        liftMotor.restoreFactoryDefaults();
+        liftEncoder = liftMotor.getEncoder();
+        liftController = liftMotor.getPIDController();
 
+        liftController.setP(p.get());
+        liftController.setI(0);
+        liftController.setD(d.get());
+        liftController.setIZone(0);
+        liftController.setFF(0);
+        liftController.setOutputRange(-1, 1);
+    }
+    
     @Override
-    public void useOutput(double output, double setpoint) {
-        // Use the output here
-
-        intakeLift.set(output);
-
+    public void periodic() {
+        if (p.hasChanged() | d.hasChanged()) {
+            liftController.setP(p.get());
+            liftController.setD(d.get());
+        }
+        
+        if (intakeUp) {
+            liftController.setReference(upPos.get(), CANSparkMax.ControlType.kPosition);
+        }
+        SmartDashboard.putNumber("intake lift pos", liftEncoder.getPosition());
     }
 
-    @Override
-    public double getMeasurement() {
-        return intakeEncoder.getPosition();
-    }
+    public void setRollerPercent(double percent) { rollerMotor.set(-percent); }
 
-
-    public void setIntakeOn(boolean up){
-        if(up){
-        setSetpoint(1);
-        System.out.println("intake up");
-        }
-        else{
-        setSetpoint(0);
-        System.out.println("intake down");
-        }
+    public void setIntakeUp(boolean up) {
+        this.intakeUp = up;
+        liftController.setReference(0, CANSparkMax.ControlType.kDutyCycle);
     }
 }

@@ -22,7 +22,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.utils.Conversions.TalonFXConversions;
-import frc.robot.utils.TunableNumber;
+import frc.robot.utils.tunables.TunableNumber;
 
 public class Drivetrain extends SubsystemBase {
     private WPI_TalonFX backLeft = new WPI_TalonFX(DriveConstants.backLeftPort);
@@ -36,9 +36,9 @@ public class Drivetrain extends SubsystemBase {
     private DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(new Rotation2d(), new Pose2d());
     private SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(DriveConstants.sVolts, DriveConstants.vVoltSecondsPerMeter, DriveConstants.aVoltSecondsSquaredPerMeter);
 
-    // private final TunableNumber p = new TunableNumber("Drive/P");
-    // private final TunableNumber d = new TunableNumber("Drive/D");
-    // private final TunableNumber f = new TunableNumber("Drive/F");
+    private TunableNumber p = new TunableNumber("Drive/P", 0.00008);
+    private TunableNumber d = new TunableNumber("Drive/D", 0.);
+    private TunableNumber f = new TunableNumber("Drive/F", 0.);
 
     // private PIDController leftController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
     // private PIDController rightController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
@@ -51,24 +51,11 @@ public class Drivetrain extends SubsystemBase {
         // Calibrate n reset the gyro
         gyro.calibrate();
         gyro.reset();
-        
-        // p.setDefault(0.00008);
-        // d.setDefault(0);
-        // f.setDefault(0);
 
         TalonFXConfiguration config = new TalonFXConfiguration();
-        // config.nominalOutputForward = 0;
-        // config.nominalOutputReverse = 0;
-        // config.peakOutputForward = 1;
-        // config.peakOutputReverse = -1;
-        // config.slot0.kP = p.get();
-        // config.slot0.kI = 0;
-        // config.slot0.kD = d.get();
-        // config.slot0.kF = f.get();
         config.closedloopRamp = 0.1;
         config.openloopRamp = 0.5;
         config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
-
         
         // Reset all the drivetrain controllers
         frontLeft.configFactoryDefault();
@@ -121,7 +108,6 @@ public class Drivetrain extends SubsystemBase {
     }
 
     public void arcadeDrive(double throttle, double turn) {
-        // System.out.println("throttle " + Math.round(throttle*10)/10. + " turn " + Math.round(turn*10)/10. + " pose " + getPose());
         differentialDrive.arcadeDrive(throttle, turn);
     }
 

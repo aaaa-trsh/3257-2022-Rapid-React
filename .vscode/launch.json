@@ -6,6 +6,13 @@
   "configurations": [
     {
         "type": "java",
+        "name": "Launch TupleInterpolable",
+        "request": "launch",
+        "mainClass": "frc.robot.utils.TupleInterpolable",
+        "projectName": "trsh-frc-2022"
+    },
+    {
+        "type": "java",
         "name": "Launch DoubleInterpolable",
         "request": "launch",
         "mainClass": "frc.robot.utils.DoubleInterpolable",

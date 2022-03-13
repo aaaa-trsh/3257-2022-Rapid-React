@@ -17,8 +17,8 @@ public class RobotContainer {
     private final Intake intake          = new Intake();
 
     private boolean intestinesOverride = false;
+    
     private final XboxJoystick driverController = new XboxJoystick(IOConstants.driverControllerPort);
-    // private final XboxJoystick opController = new XboxJoystick(IOConstants.operatorControllerPort);
     private double shooterPwr = 300;
     public RobotContainer() {
         drivetrain.setDefaultCommand(
@@ -46,47 +46,42 @@ public class RobotContainer {
     }
 
     private void configureButtonBindings() {
+        // X BUTTON - MAGAZINE IN
         driverController.xButton
             .whenActive(new InstantCommand(() -> { intestines.setMagazinePercent(.5); intestinesOverride = true; }, intestines))
             .whenInactive(new InstantCommand(() -> { intestines.setMagazinePercent(0); intestinesOverride = false; }, intestines));
         
+        // LEFT TRIGGER - MAGAZINE + INTAKE OUT
         driverController.leftTriggerButton
-            .whenActive(new InstantCommand(() -> { intestines.setMagazinePercent(-.5); intestines.setIntakePercent(.3); intestinesOverride = true; }, intestines))
-            .whenInactive(new InstantCommand(() -> { intestines.setMagazinePercent(0); intestines.setIntakePercent(0); intestinesOverride = false; }, intestines));
+            .whenActive(new InstantCommand(() -> { intestines.setMagazinePercent(-.5); intake.setRollerPercent(-.3); intestinesOverride = true; }, intestines))
+            .whenInactive(new InstantCommand(() -> { intestines.setMagazinePercent(0); intake.setRollerPercent(0); intestinesOverride = false; }, intestines));
 
+        // RIGHT BUMPER - SHOOTER ENABLE/DISABLE
         driverController.rightBumper
             .whenActive(new InstantCommand(() -> shooter.setShooterSpeeds(shooterPwr, shooterPwr), shooter))
             .whenInactive(new InstantCommand(() -> shooter.setShooterSpeeds(0, 0), shooter));
         
+        // RIGHT TRIGGER - INTAKE IN
         driverController.rightTriggerButton
-            .whenActive(new InstantCommand(() -> { intestines.setIntakePercent(-.7); }, intestines))
-            .whenInactive(new InstantCommand(() -> { intestines.setIntakePercent(0); }, intestines));
+            .whenActive(new InstantCommand(() -> { intake.setRollerPercent(.7); }, intestines))
+            .whenInactive(new InstantCommand(() -> { intake.setRollerPercent(0); }, intestines));
         
-        // driverController.Dpad.Up
-        //     .whenActive(new InstantCommand(() -> intake.setIntakeOn(true), intestines));
-        // driverController.Dpad.Down
-        //     .whenActive(new InstantCommand(() -> intake.setIntakeOn(false), intestines));
+        // DPAD UP - INTAKE UP
+        driverController.Dpad.Up
+            .whenActive(new InstantCommand(() -> intake.setIntakeUp(true), intestines));
+        // DPAD DOWN - INTAKE DOWN
+            driverController.Dpad.Down
+            .whenActive(new InstantCommand(() -> intake.setIntakeUp(false), intestines));
 
+        // Y BUTTON - SHOOTER RPM UP
         driverController.yButton
             .whenActive(new InstantCommand(() -> {shooterPwr += 200; System.out.println("SHOOTER PWR UP. NOW " + shooterPwr);}));
+        // A BUTTON - SHOOTER RPM DOWN
         driverController.aButton
             .whenActive(new InstantCommand(() -> {shooterPwr -= 200; System.out.println("SHOOTER PWR DOWN. NOW " + shooterPwr);}));
-            // driverController.rightBumper
-            // .whenActive(new InstantCommand(() -> { intestines.setIntakePercent(-0.6); intestinesOverride = true; }))
-            // .whenInactive(new InstantCommand(() -> { intestines.setIntakePercent(0); intestinesOverride = false; }));
     }
 
     public Command getAutonomousCommand() {
         return null;
-        // return new RunCommand(()->{
-        //     // drivetrain.setWheelSpeeds(new DifferentialDriveWheelSpeeds(100, 100));
-        //     // System.out.println(drivetrain.getWheelSpeeds());
-        //     intestines.setMagazinePercent(05);
-        // }, drivetrain);
-        // return new SequentialCommandGroup(
-        //     new InstantCommand(()->{intestines.setMagazinePercent(0.5); System.out.println("FUCKKK");}),
-        //     new WaitCommand(0.5),
-        //     new InstantCommand(()->{intestines.setMagazinePercent(0);})
-        // );
     }
 }

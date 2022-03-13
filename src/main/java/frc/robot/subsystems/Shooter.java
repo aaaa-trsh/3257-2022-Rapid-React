@@ -1,5 +1,7 @@
 package frc.robot.subsystems;
 
+import java.util.TreeMap;
+
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.TalonFXControlMode;
@@ -7,38 +9,40 @@ import com.ctre.phoenix.motorcontrol.TalonFXFeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.ShooterConstants;
-import frc.robot.utils.TunableNumber;
 import frc.robot.utils.Conversions.TalonFXConversions;
+import frc.robot.utils.interpolables.TupleInterpolable;
+import frc.robot.utils.interpolables.Interpolable.InterpolatingTreeMap;
+import frc.robot.utils.tunables.TunableNumber;
+import frc.robot.utils.tunables.TunableNumberArray;
 
 public class Shooter extends SubsystemBase {
     private WPI_TalonFX lowerFlywheel = new WPI_TalonFX(ShooterConstants.lowerFlywheelPort);
     private WPI_TalonFX upperFlywheel = new WPI_TalonFX(ShooterConstants.upperFlywheelPort);
     
-    // private final TunableNumber maxVel = new TunableNumber("Shooter/MaxRPM");
-    // private final TunableNumber maxAccel = new TunableNumber("Shooter/MaxAccelRPMPerSec2");
-    // private final TunableNumber maxJerk = new TunableNumber("Shooter/MaxJerkRPMPerSec3");
-    private final TunableNumber p = new TunableNumber("Shooter/P");
-    private final TunableNumber i = new TunableNumber("Shooter/I");
-    private final TunableNumber d = new TunableNumber("Shooter/D");
-    private final TunableNumber f = new TunableNumber("Shooter/F");
-    private final TunableNumber tolerance = new TunableNumber("Shooter/ToleranceRPM");
+    // private TunableNumber maxVel = new TunableNumber("Shooter/MaxRPM");
+    // private TunableNumber maxAccel = new TunableNumber("Shooter/MaxAccelRPMPerSec2");
+    // private TunableNumber maxJerk = new TunableNumber("Shooter/MaxJerkRPMPerSec3");
+    private TunableNumber p = new TunableNumber("Shooter/P", 0.14);
+    private TunableNumber i = new TunableNumber("Shooter/I", 0.);
+    private TunableNumber d = new TunableNumber("Shooter/D", 0.1);
+    private TunableNumber f = new TunableNumber("Shooter/F", 0.5);
+    
+    private TunableNumberArray[] interpolatingTreemapLandmarks = { 
+        new TunableNumberArray("Shooter/DistanceLandmarks", new double[0]),
+        new TunableNumberArray("Shooter/LowerFlywheelLandmarks", new double[0]),
+        new TunableNumberArray("Shooter/UpperFlywheelLandmarks", new double[0]),
+    };
+
+    private InterpolatingTreeMap<Pair<Double, Double>> interpolatingTreemap = new InterpolatingTreeMap<>();
     
     private double lowerRPM, upperRPM;
 
     public Shooter() {
-        // maxVel.setDefault(2650.0);
-        // maxAccel.setDefault(2000.0);
-        // maxJerk.setDefault(2500.0);
-        p.setDefault(0.14);
-        i.setDefault(0.0);
-        d.setDefault(0.1);
-        f.setDefault(0.5);
-        tolerance.setDefault(0);
-
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.nominalOutputForward = 0;
         config.nominalOutputReverse = 0;
@@ -68,9 +72,10 @@ public class Shooter extends SubsystemBase {
         this.lowerRPM = lowerRPM;
         this.upperRPM = upperRPM;
     }
-    
-    public void setSpeedsFromDistance() {
 
+    public void setShooterFromDistance(double distance) {
+        var shooterSpeeds = interpolatingTreemap.interpolate(distance);
+        setShooterSpeeds(shooterSpeeds.getFirst(), shooterSpeeds.getSecond());
     }
 
     @Override
@@ -91,6 +96,19 @@ public class Shooter extends SubsystemBase {
                 " D: " + d.get() + 
                 " F: " + f.get()
             );
+        }
+
+        if (interpolatingTreemapLandmarks[0].hasChanged() | interpolatingTreemapLandmarks[1].hasChanged() | interpolatingTreemapLandmarks[2].hasChanged()) {
+            var interpolatingTreemap = new InterpolatingTreeMap<Pair<Double, Double>>();
+            double[] dist = interpolatingTreemapLandmarks[0].get();
+            double[] low = interpolatingTreemapLandmarks[1].get();
+            double[] up = interpolatingTreemapLandmarks[2].get();
+
+            for (int i = 0; i < dist.length; i++) {
+                interpolatingTreemap.put(dist[i], new TupleInterpolable(low[i], up[i]));
+            }
+
+            this.interpolatingTreemap = interpolatingTreemap;
         }
         
         if (lowerRPM > 0 | upperRPM > 0) {
