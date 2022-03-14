@@ -71,28 +71,18 @@ public final class Constants {
 
     public static class ClimbConstants {
         /* Motor Ports */
-        public static int shoulderPort = 0;
-        public static int elbowPort = 1;
+        public static int arm1Port = 0;
+        public static int arm2Port = 1;
 
         /* Encoder Ports */
-        public static int shoulderEncoderPort = 0;
-        public static int elbowEncoderPort = 0;
-        public static int jointEncoderCountsPerRotation = 8192;
+        public static int arm1EncoderPort = 0;
+        public static int arm2EncoderPort = 0;
+        public static int encoderCPR = 8192;
 
         /* PID Controller and Feedforward Gains - use sysid */
-        public static double shoulderP = 0.1;
+        public static double shoulderP = 0.01;
         public static double shoulderI = 0.0;
         public static double shoulderD = 0.0;
-        public static double shoulderS = 0.1;
-        public static double shoulderV = 0;
-        public static double shoulderA = 0;
-
-        public static double elbowP = 0.1;
-        public static double elbowI = 0.0;
-        public static double elbowD = 0.0;
-        public static double elbowS = 0.1;
-        public static double elbowV = 0;
-        public static double elbowA = 0;
     }
     public static class IntestineConstants {
         public static int magazinePort = 11;

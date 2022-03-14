@@ -54,7 +54,7 @@ public class Drivetrain extends SubsystemBase {
 
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.closedloopRamp = 0.1;
-        config.openloopRamp = 0.5;
+        config.openloopRamp = 0.2;
         config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
         
         // Reset all the drivetrain controllers

@@ -1,7 +1,5 @@
 package frc.robot.subsystems;
 
-import java.util.TreeMap;
-
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.TalonFXControlMode;
@@ -14,9 +12,10 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.ShooterConstants;
+import frc.robot.utils.Limelight;
 import frc.robot.utils.Conversions.TalonFXConversions;
-import frc.robot.utils.interpolables.TupleInterpolable;
 import frc.robot.utils.interpolables.Interpolable.InterpolatingTreeMap;
+import frc.robot.utils.interpolables.TupleInterpolable;
 import frc.robot.utils.tunables.TunableNumber;
 import frc.robot.utils.tunables.TunableNumberArray;
 
@@ -24,6 +23,7 @@ public class Shooter extends SubsystemBase {
     private WPI_TalonFX lowerFlywheel = new WPI_TalonFX(ShooterConstants.lowerFlywheelPort);
     private WPI_TalonFX upperFlywheel = new WPI_TalonFX(ShooterConstants.upperFlywheelPort);
     
+    private Limelight limelight = new Limelight("limelight-bottom");
     // private TunableNumber maxVel = new TunableNumber("Shooter/MaxRPM");
     // private TunableNumber maxAccel = new TunableNumber("Shooter/MaxAccelRPMPerSec2");
     // private TunableNumber maxJerk = new TunableNumber("Shooter/MaxJerkRPMPerSec3");
@@ -128,4 +128,6 @@ public class Shooter extends SubsystemBase {
         SmartDashboard.putNumber("lower flywheel target", TalonFXConversions.RPM2Native(lowerRPM));
         SmartDashboard.putNumber("upper flywheel target", TalonFXConversions.RPM2Native(upperRPM));
     }
+
+    public Limelight getLimelight() { return limelight; }
 }

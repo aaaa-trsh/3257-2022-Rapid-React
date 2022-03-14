@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.Constants.IOConstants;
+import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Intestines;
@@ -13,6 +14,7 @@ import frc.robot.utils.control.XboxJoystick;
 public class RobotContainer {
     private final Drivetrain drivetrain  = new Drivetrain();
     private final Intestines intestines  = new Intestines();
+    private final Climber climber        = new Climber();
     private final Shooter shooter        = new Shooter();
     private final Intake intake          = new Intake();
 
@@ -63,15 +65,24 @@ public class RobotContainer {
         
         // RIGHT TRIGGER - INTAKE IN
         driverController.rightTriggerButton
-            .whenActive(new InstantCommand(() -> { intake.setRollerPercent(.7); }, intestines))
-            .whenInactive(new InstantCommand(() -> { intake.setRollerPercent(0); }, intestines));
+            .whenActive(new InstantCommand(() -> { intake.setRollerPercent(.7); }, intake))
+            .whenInactive(new InstantCommand(() -> { intake.setRollerPercent(0); }, intake));
         
         // DPAD UP - INTAKE UP
         driverController.Dpad.Up
-            .whenActive(new InstantCommand(() -> intake.setIntakeUp(true), intestines));
+            .whenActive(new InstantCommand(() -> intake.setIntakeUp(true), intake));
         // DPAD DOWN - INTAKE DOWN
             driverController.Dpad.Down
-            .whenActive(new InstantCommand(() -> intake.setIntakeUp(false), intestines));
+            .whenActive(new InstantCommand(() -> intake.setIntakeUp(false), intake));
+
+        // driverController.Dpad.Up
+        //     .whenActive(new InstantCommand(() -> climber.setArm1(0.1), climber));
+        // driverController.Dpad.Down
+        //     .whenActive(new InstantCommand(() -> climber.setArm1(-0.1), climber));
+        // driverController.Dpad.Left
+        //     .whenActive(new InstantCommand(() -> climber.setArm2(0.1), climber));
+        // driverController.Dpad.Right
+        //     .whenActive(new InstantCommand(() -> climber.setArm2(-0.1), climber));
 
         // Y BUTTON - SHOOTER RPM UP
         driverController.yButton
