@@ -26,7 +26,7 @@ public class Intake extends SubsystemBase {
     private TunableNumber p = new TunableNumber("Intake/P", 0.);
     private TunableNumber d = new TunableNumber("Intake/D", 0.);
 
-    private boolean intakeUp = false;
+    private IntakeState intakeState = IntakeState.DOWN;
 
     public Intake() {
         liftMotor.restoreFactoryDefaults();
@@ -48,7 +48,7 @@ public class Intake extends SubsystemBase {
             liftController.setD(d.get());
         }
         
-        if (intakeUp) {
+        if (intakeState == IntakeState.UP) {
             liftController.setReference(upPos.get(), CANSparkMax.ControlType.kPosition);
         }
         SmartDashboard.putNumber("intake lift pos", liftEncoder.getPosition());
@@ -56,8 +56,12 @@ public class Intake extends SubsystemBase {
 
     public void setRollerPercent(double percent) { rollerMotor.set(-percent); }
 
-    public void setIntakeUp(boolean up) {
-        this.intakeUp = up;
+    public void setIntakeState(IntakeState intakeState) {
+        this.intakeState = intakeState;
         liftController.setReference(0, CANSparkMax.ControlType.kDutyCycle);
     }
+    
+    public static enum IntakeState {
+		DOWN, HALF, UP;
+	}
 }

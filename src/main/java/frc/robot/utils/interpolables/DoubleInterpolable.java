@@ -6,12 +6,12 @@ public class DoubleInterpolable implements Interpolable<Double>, Comparable<Doub
     
     @Override
     public Double interpolate(Double b, Double t) {
-        return t * (b - a) + a;
+        return Interpolable.lerp(a, b, t);
     }
 
     @Override
     public Double inverseInterpolate(Double b, Double query) {
-        return (query - a) / (b - a);
+        return Interpolable.inverseLerp(a, b, query);
     }
 
     @Override

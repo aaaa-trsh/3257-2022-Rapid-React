@@ -40,6 +40,7 @@ public class Drivetrain extends SubsystemBase {
     private TunableNumber d = new TunableNumber("Drive/D", 0.);
     private TunableNumber f = new TunableNumber("Drive/F", 0.);
 
+    private PIDController turnController = new PIDController(.1, 0, 0);
     // private PIDController leftController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
     // private PIDController rightController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
 
@@ -51,6 +52,7 @@ public class Drivetrain extends SubsystemBase {
         // Calibrate n reset the gyro
         gyro.calibrate();
         gyro.reset();
+        turnController.enableContinuousInput(-180, 180);
 
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.closedloopRamp = 0.1;
@@ -85,6 +87,11 @@ public class Drivetrain extends SubsystemBase {
     
     @Override
     public void periodic() {
+        if (p.hasChanged() | d.hasChanged()) {
+            turnController.setP(p.get());
+            turnController.setD(d.get());
+        }
+
         odometry.update(Rotation2d.fromDegrees(getHeading()), getLeftPosition(), getRightPosition());
         field.setRobotPose(getPose());
 
@@ -110,15 +117,6 @@ public class Drivetrain extends SubsystemBase {
     public void arcadeDrive(double throttle, double turn) {
         differentialDrive.arcadeDrive(throttle, turn);
     }
-
-    public void setNeutralMode(NeutralMode mode) {
-        frontLeft.setNeutralMode(mode);
-        frontRight.setNeutralMode(mode);
-        backLeft.setNeutralMode(mode);
-        backRight.setNeutralMode(mode);
-    }
-
-    public void setSlowMode(boolean on) { differentialDrive.setMaxOutput(on ? 0.2 : 1); }
     
     public void resetOdometry(Pose2d pose) { 
         odometry.resetPosition(pose, pose.getRotation()); 
@@ -126,7 +124,6 @@ public class Drivetrain extends SubsystemBase {
         frontRight.setSelectedSensorPosition(0);
         gyro.reset();
     }
-    public void resetOdometry() { this.resetOdometry(new Pose2d()); }
 
     /* CONVERSIONS */
     public static double nativePositionToMeters(double nativeUnits) { 
@@ -176,10 +173,7 @@ public class Drivetrain extends SubsystemBase {
         return nativeToMetersPerSecond((frontRight.getSelectedSensorVelocity() + backRight.getSelectedSensorVelocity())/2. * 10); 
     }
     
-    public double getHeading() {
-        return DriveConstants.invertGyro ? -gyro.getAngle() : gyro.getAngle();
-    }
-    
+    public double getHeading() { return DriveConstants.invertGyro ? -gyro.getAngle() : gyro.getAngle(); }
     public double getHeadingRate() { return DriveConstants.invertGyro ? -gyro.getRate() : gyro.getRate(); }
 
     /* Odometry Helper Functions */

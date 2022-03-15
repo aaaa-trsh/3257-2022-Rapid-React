@@ -52,9 +52,7 @@ public class Climber extends SubsystemBase {
             controller.setD(d.get());
         }
 
-        if (upPos.hasChanged()) {
-            controller.setSetpoint(upPos.get());            
-        }
+        if (upPos.hasChanged()) { controller.setSetpoint(upPos.get()); }
 
         if (enabled) {
             arm1.set(ControlMode.PercentOutput, arm1Up ? controller.calculate(arm1Encoder.getDistance()) : 0);
