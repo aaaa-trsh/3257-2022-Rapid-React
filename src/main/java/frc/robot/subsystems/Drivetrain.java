@@ -36,9 +36,8 @@ public class Drivetrain extends SubsystemBase {
     private DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(new Rotation2d(), new Pose2d());
     private SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(DriveConstants.sVolts, DriveConstants.vVoltSecondsPerMeter, DriveConstants.aVoltSecondsSquaredPerMeter);
 
-    private TunableNumber p = new TunableNumber("Drive/P", 0.00008);
-    private TunableNumber d = new TunableNumber("Drive/D", 0.);
-    private TunableNumber f = new TunableNumber("Drive/F", 0.);
+    private TunableNumber turnP = new TunableNumber("Drive/TurnP", 0.00008);
+    private TunableNumber turnD = new TunableNumber("Drive/TurnD", 0.);
 
     private PIDController turnController = new PIDController(.1, 0, 0);
     // private PIDController leftController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
@@ -62,7 +61,7 @@ public class Drivetrain extends SubsystemBase {
         // Reset all the drivetrain controllers
         frontLeft.configFactoryDefault();
         frontLeft.setNeutralMode(NeutralMode.Coast);
-        frontLeft.setInverted(InvertType.None);
+        frontLeft.setInverted(InvertType.InvertMotorOutput);
         frontLeft.configAllSettings(config);
 
         backLeft.configFactoryDefault();
@@ -73,7 +72,7 @@ public class Drivetrain extends SubsystemBase {
         
         frontRight.configFactoryDefault();
         frontRight.setNeutralMode(NeutralMode.Coast);
-        frontRight.setInverted(InvertType.InvertMotorOutput);
+        frontRight.setInverted(InvertType.None);
         frontRight.configAllSettings(config);
 
         backRight.configFactoryDefault();
@@ -87,9 +86,9 @@ public class Drivetrain extends SubsystemBase {
     
     @Override
     public void periodic() {
-        if (p.hasChanged() | d.hasChanged()) {
-            turnController.setP(p.get());
-            turnController.setD(d.get());
+        if (turnP.hasChanged() | turnD.hasChanged()) {
+            turnController.setP(turnP.get());
+            turnController.setD(turnD.get());
         }
 
         odometry.update(Rotation2d.fromDegrees(getHeading()), getLeftPosition(), getRightPosition());
@@ -154,6 +153,7 @@ public class Drivetrain extends SubsystemBase {
 
     /* BOILERPLATE */
     /* PID Getters */
+    public PIDController getTurnController() { return turnController; }
     public PIDController getLeftController() { return null;/*leftController;*/ }
     public PIDController getRightController() { return null;/*rightController;*/ }
     public SimpleMotorFeedforward getFeedForward() { return feedforward; }
@@ -177,6 +177,7 @@ public class Drivetrain extends SubsystemBase {
     public double getHeadingRate() { return DriveConstants.invertGyro ? -gyro.getRate() : gyro.getRate(); }
 
     /* Odometry Helper Functions */
+    public DifferentialDrive getDifferentialDrive() { return differentialDrive; }
     public DifferentialDriveKinematics getKinematics() { return kinematics; }
     public DifferentialDriveWheelSpeeds getWheelSpeeds() { return new DifferentialDriveWheelSpeeds(getLeftVelocity(), getLeftVelocity()); }
     public Pose2d getPose() { return odometry.getPoseMeters(); /*odometry.getEstimatedPosition();*/ }

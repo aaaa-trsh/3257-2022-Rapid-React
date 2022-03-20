@@ -5,7 +5,6 @@ import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ClimbConstants;
 import frc.robot.utils.tunables.TunableNumber;
@@ -24,8 +23,8 @@ public class Climber extends SubsystemBase {
     private PIDController controller;
 
     private boolean enabled = false;
-    private boolean arm1Up = false;
-    private boolean arm2Up = false;
+    // private boolean arm1Up = false;
+    // private boolean arm2Up = false;
 
     public Climber() {
         arm1.setNeutralMode(NeutralMode.Brake);
@@ -40,9 +39,9 @@ public class Climber extends SubsystemBase {
     }
 
     public void setEnabled(boolean on) { this.enabled = on; }
-    public void setArm1Up(boolean up) { this.arm1Up = up; }
+    // public void setArm1Up(boolean up) { this.arm1Up = up; }
     public void setArm1(double speed) { arm1.set(ControlMode.PercentOutput, speed); }
-    public void setArm2Up(boolean up) { this.arm2Up = up; }
+    // public void setArm2Up(boolean up) { this.arm2Up = up; }
     public void setArm2(double speed) { arm2.set(ControlMode.PercentOutput, speed); }
 
     @Override

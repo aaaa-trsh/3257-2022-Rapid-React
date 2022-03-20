@@ -8,7 +8,8 @@ import edu.wpi.first.math.util.Units;
 import frc.robot.utils.GeomUtil;
 
 public final class Constants {
-    public static boolean tuning = false; 
+    public static boolean tuning = true; 
+    public static boolean debugControl = false; 
     public static int timeout = 30; 
     public static class DriveConstants { 
         /* Drive Ports */
@@ -52,21 +53,17 @@ public final class Constants {
         /* Motor Ports */
         public static int upperFlywheelPort = 8;
         public static int lowerFlywheelPort = 6;
-
-        /* Flywheel ID - Get from sysid! */
-        public static double flywheelV = 0.023;
-        public static double flywheelA = 0.001;
-        public static double spinupRadPerSec = Units.rotationsPerMinuteToRadiansPerSecond(500.0);
-        
-        // grab MOI from cad
-        public static double flywheelMOI = 0.001;
         
         // rotations of motor/rotations of flywheel <- higher if geared down!
-        public static double flywheelGearing = 1.0;
+        // public static double flywheelGearing = 1.0;
         
-        public static double P = 0.;
-        public static double I = 0.;
+        public static double P = 0.14;
+        public static double I = 0.1;
         public static double D = 0.;
+        public static double F = 0.5;
+
+        public static double rampRate = 0.7;
+        public static double rpmTolerance = 20 * 2048;
     }
 
     public static class ClimbConstants {

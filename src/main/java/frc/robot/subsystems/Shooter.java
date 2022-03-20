@@ -24,13 +24,11 @@ public class Shooter extends SubsystemBase {
     private WPI_TalonFX upperFlywheel = new WPI_TalonFX(ShooterConstants.upperFlywheelPort);
     
     private Limelight limelight = new Limelight("limelight-bottom");
-    // private TunableNumber maxVel = new TunableNumber("Shooter/MaxRPM");
-    // private TunableNumber maxAccel = new TunableNumber("Shooter/MaxAccelRPMPerSec2");
-    // private TunableNumber maxJerk = new TunableNumber("Shooter/MaxJerkRPMPerSec3");
-    private TunableNumber p = new TunableNumber("Shooter/P", 0.14);
-    private TunableNumber i = new TunableNumber("Shooter/I", 0.);
-    private TunableNumber d = new TunableNumber("Shooter/D", 0.1);
-    private TunableNumber f = new TunableNumber("Shooter/F", 0.5);
+
+    private TunableNumber p = new TunableNumber("Shooter/P", ShooterConstants.P);
+    private TunableNumber i = new TunableNumber("Shooter/I", ShooterConstants.I);
+    private TunableNumber d = new TunableNumber("Shooter/D", ShooterConstants.D);
+    private TunableNumber f = new TunableNumber("Shooter/F", ShooterConstants.F);
     
     private TunableNumberArray[] interpolatingTreemapLandmarks = { 
         new TunableNumberArray("Shooter/DistanceLandmarks", new double[]{6, -3, -12}),
@@ -63,7 +61,7 @@ public class Shooter extends SubsystemBase {
         config.slot0.kI = i.get();
         config.slot0.kD = d.get();
         config.slot0.kF = f.get();
-        config.closedloopRamp = 0.7;
+        config.closedloopRamp = ShooterConstants.rampRate;
         config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
 
         // lower flywheel config
@@ -89,10 +87,10 @@ public class Shooter extends SubsystemBase {
         System.out.println(shooterSpeeds.getFirst() + " | " + shooterSpeeds.getSecond());
         setShooterSpeeds(shooterSpeeds.getFirst()+50, shooterSpeeds.getSecond()+50);
     }
-    
-    public double getLimelightDistance() {
-        return (1 - ((getLimelight().getPitchError() / 48.) + 0.5)) * 24;
-    }
+
+    public void setShooterFromDistance() { setShooterFromDistance(getLimelight().getPitchError()); }
+
+    public Pair<Double, Double> getFlywheelNativeVelocityError() { return new Pair<Double, Double>(lowerFlywheel.getClosedLoopError(), upperFlywheel.getClosedLoopError()); }
 
     @Override
     public void periodic() {

@@ -4,21 +4,26 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.PIDCommand;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.Constants.IOConstants;
-import frc.robot.subsystems.Climber;
+import frc.robot.Constants.ShooterConstants;
+import frc.robot.commands.DriveAnglePID;
+import frc.robot.commands.DriveLinePID;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Intake;
+import frc.robot.subsystems.Intake.IntakeState;
 import frc.robot.subsystems.Intestines;
 import frc.robot.subsystems.Shooter;
-import frc.robot.subsystems.Intake.IntakeState;
 import frc.robot.utils.control.XboxJoystick;
 import frc.robot.utils.tunables.TunableNumber;
 
 public class RobotContainer {
     private final Drivetrain drivetrain  = new Drivetrain();
     private final Intestines intestines  = new Intestines();
-    private final Climber climber        = new Climber();
+    // private final Climber climber        = new Climber();
     private final Shooter shooter        = new Shooter();
     private final Intake intake          = new Intake();
 
@@ -29,16 +34,9 @@ public class RobotContainer {
     private final XboxJoystick driverController = new XboxJoystick(IOConstants.driverControllerPort);
     private final XboxJoystick operatorController = new XboxJoystick(IOConstants.operatorControllerPort);
     private double shooterPwr = 1200;
+    
     public RobotContainer() {
-        drivetrain.setDefaultCommand(
-            new RunCommand(
-                () -> drivetrain.arcadeDrive(
-                    -driverController.getLeftStickYValue(),
-                    -driverController.getRightStickXValue() * .6
-                ),   
-                drivetrain
-            )
-        ); 
+        
         // mmmmmmmm autofeed nicee
         // intestines.setDefaultCommand(
         //     new RunCommand(
@@ -51,7 +49,30 @@ public class RobotContainer {
         //         intestines
         //     )
         // ); 
-        configureButtonBindings();
+        if (Constants.debugControl) {
+            drivetrain.setDefaultCommand(
+                new RunCommand(
+                    () -> drivetrain.arcadeDrive(
+                        driverController.getLeftStickYValue(),
+                        driverController.getLeftStickXValue() * .6
+                    ),   
+                    drivetrain
+                )
+            ); 
+            configureDebugButtonBindings();
+        }
+        else {
+            drivetrain.setDefaultCommand(
+                new RunCommand(
+                    () -> drivetrain.arcadeDrive(
+                        driverController.getLeftStickYValue(),
+                        driverController.getRightStickXValue() * .6
+                    ),
+                    drivetrain
+                )
+            ); 
+            configureButtonBindings();
+        }
     }
 
     private void configureButtonBindings() {
@@ -69,7 +90,7 @@ public class RobotContainer {
 
         // LBUMPER - MAGAZINE IN
         operatorController.xButton
-            .whenActive(() -> { System.out.println("aa");intestines.setMagazinePercent(0.2); intestinesOverride = true; }, intestines)
+            .whenActive(() -> { intestines.setMagazinePercent(0.2); intestinesOverride = true; }, intestines)
             .whenInactive(() -> { intestines.setMagazinePercent(0); intestinesOverride = false; }, intestines);
 
         // RBUMPER - MAGAZINE OUT
@@ -82,12 +103,13 @@ public class RobotContainer {
             .whenActive(() -> { intake.setRollerPercent(-.3);}, intestines)
             .whenInactive(() -> { intake.setRollerPercent(0);}, intestines);
 
-        // RTRIGGER - INTAKE UP
+        // RTRIGGER - INTAKE DOWN
         driverController.rightTriggerButton
             .whenActive(
                 new RunCommand(() -> {
                     // intake.setIntakeState(driverController.getRightTriggerValue() < 0.75 ? IntakeState.HALF : IntakeState.DOWN);
-                    intake.setIntakeState(IntakeState.DOWN);
+                    System.out.println(driverController.getRightTriggerValue() < 0.75 ? "Intake Lift HALFWAY" : "Intake Lift FULL DOWN");
+                    // intake.setIntakeState(IntakeState.DOWN);
                     intake.setRollerPercent(.7);
                 }, intake)
             )
@@ -97,7 +119,7 @@ public class RobotContainer {
         // driverController.xButton
         //     .whenActive(
         //         new PIDCommand(
-        //             new PIDController(0.1, 0, 0),
+        //             drivetrain.getTurnController(),
         //             () ->shooter.getLimelight().getPitchError(),
         //             0.,
         //             (output) -> { drivetrain.arcadeDrive(output, -driverController.getY()); },
@@ -109,7 +131,7 @@ public class RobotContainer {
         operatorController.leftTriggerButton
             .whileHeld(new InstantCommand(() -> {
                 if (shooter.getLimelight().hasTarget()) {
-                    shooter.setShooterFromDistance(shooter.getLimelight().getPitchError());
+                    shooter.setShooterFromDistance();
                 }// else {
                     // shooter.setShooterSpeeds(shooterPwr * (1.-shooterRatio.get()), shooterPwr * shooterRatio.get());
                 // }
@@ -117,23 +139,82 @@ public class RobotContainer {
             .whenInactive(() -> shooter.setShooterSpeeds(0, 0));
 
         // DPAD - VERTICAL: ARM1, HORIZONTAL: ARM2
-        // driverController.yButton
+        // operatorController.yButton
         //     .whenActive(() -> climber.setArm1(1), climber)
         //     .whenInactive(() -> climber.setArm1(0), climber);
-        // driverController.aButton
+        // operatorController.aButton
         //     .whenActive(() -> climber.setArm1(-1), climber)
-        //     .whenInactive(() -> climber.setArm1(0), climber);
+        // operatorController.whenInactive(() -> climber.setArm1(0), climber);
         // driverController.Dpad.Right
         //     .whenActive(() -> climber.setArm2(0.1), climber);
-        // driverController.Dpad.Left
+        // operatorController.Dpad.Left
         //     .whenActive(() -> climber.setArm2(-0.1), climber);
+    }
 
+    public void configureDebugButtonBindings() {
+        /**
+         * this is for my debug needs so i dont need to manhandle two controllers at the same time -k ;)
+         * 
+         * CONTROLS
+         *     LTRIGGER - SHOOTER ON
+         *     RTRIGGER - INTAKE DOWN
+         *     LBUMPER - MAGAZINE IN
+         *     X - MAGAZINE OUT
+         *     Y - SHOOTER RPM UP
+         *     A - SHOOTER RPM DOWN
+         *     B - VISION ALIGN
+         */
+
+        // LTRIGGER - SHOOTER ON
+        driverController.leftTriggerButton
+            .whileHeld(new InstantCommand(() -> {
+                if (shooter.getLimelight().hasTarget()) {
+                    shooter.setShooterFromDistance();
+                }// else {
+                    // shooter.setShooterSpeeds(shooterPwr * (1.-shooterRatio.get()), shooterPwr * shooterRatio.get());
+                // }
+            }, shooter))
+            .whenInactive(() -> shooter.setShooterSpeeds(0, 0));
+        
+        // RTRIGGER - INTAKE DOWN
+        driverController.rightTriggerButton
+            .whenActive(
+                new RunCommand(() -> {
+                    // intake.setIntakeState(driverController.getRightTriggerValue() < 0.75 ? IntakeState.HALF : IntakeState.DOWN);
+                    System.out.println(driverController.getRightTriggerValue() < 0.75 ? "Intake Lift HALFWAY" : "Intake Lift FULL DOWN");
+                    // intake.setIntakeState(IntakeState.DOWN);
+                    intake.setRollerPercent(.7);
+                }, intake)
+            )
+            .whenInactive(() -> { intake.setIntakeState(Intake.IntakeState.UP); intake.setRollerPercent(0); }, intake);
+            
+        // X - MAGAZINE OUT
+        driverController.xButton
+            .whenActive(() -> { intestines.setMagazinePercent(-.5); intestinesOverride = true; }, intestines)
+            .whenInactive(() -> { intestines.setMagazinePercent(0); intestinesOverride = false; }, intestines);
         // Y - SHOOTER RPM UP
-        operatorController.yButton
+        driverController.yButton
             .whenActive(new InstantCommand(() -> {shooterPwr += 100; System.out.println("SHOOTER PWR UP. NOW " + shooterPwr);}));
         // A - SHOOTER RPM DOWN
-        operatorController.aButton
+        driverController.aButton
             .whenActive(new InstantCommand(() -> {shooterPwr -= 100; System.out.println("SHOOTER PWR DOWN. NOW " + shooterPwr);}));
+        // B - VISION ALIGN
+        driverController.bButton
+            .whenActive(
+                new PIDCommand(
+                    drivetrain.getTurnController(),
+                    () ->shooter.getLimelight().getPitchError(),
+                    0.,
+                    (output) -> { drivetrain.arcadeDrive(output, -driverController.getY()); },
+                    drivetrain
+                )
+            );
+
+        // LBUMPER - MAGAZINE IN
+        driverController.rightBumper
+            .whenActive(() -> { intestines.setMagazinePercent(0.2); intestinesOverride = true; }, intestines)
+            .whenInactive(() -> { intestines.setMagazinePercent(0); intestinesOverride = false; }, intestines);
+
     }
 
     public void periodic() {
@@ -145,6 +226,47 @@ public class RobotContainer {
         }
     }
     public Command getAutonomousCommand() {
-        return null;
+        // 1 BALL AUTO ------------------------
+        // return new SequentialCommandGroup(
+        //     new InstantCommand(() -> {
+        //         intake.setIntakeState(IntakeState.DOWN);
+        //         intake.setRollerPercent(0.7);
+        //     }),
+        //     new ParallelCommandGroup(
+        //         new PIDCommand(drivetrain.getTurnController(), () -> shooter.getLimelight().getPitchError(), 0., (output) -> drivetrain.arcadeDrive(output, 0), drivetrain),
+        //         new RunCommand(() -> {
+        //             shooter.setShooterFromDistance();
+        //             var flywheelError = shooter.getFlywheelNativeVelocityError();
+        //             if ((flywheelError.getFirst() + flywheelError.getSecond()) < ShooterConstants.rpmTolerance) {
+        //                 intestines.setMagazinePercent(0.2);
+        //             } else {
+        //                 intestines.setMagazinePercent(0);
+        //             }
+        //         }, shooter)
+        //     ).withTimeout(5),
+        //     new DriveLinePID(-1, 0.1, 0.7, drivetrain)
+        // );
+
+        // 2 BALL AUTO ------------------------
+        return new SequentialCommandGroup(
+            new InstantCommand(() -> {
+                intake.setIntakeState(IntakeState.DOWN);
+                intake.setRollerPercent(0.7);
+            }),
+            new DriveLinePID(1, 0.1, 0.7, drivetrain),
+            new DriveAnglePID(180, drivetrain),
+            new ParallelCommandGroup(
+                new PIDCommand(drivetrain.getTurnController(), () -> shooter.getLimelight().getPitchError(), 0., (output) -> drivetrain.arcadeDrive(output, 0), drivetrain),
+                new RunCommand(() -> {
+                    shooter.setShooterFromDistance();
+                    var flywheelError = shooter.getFlywheelNativeVelocityError();
+                    if ((flywheelError.getFirst() + flywheelError.getSecond()) < ShooterConstants.rpmTolerance) {
+                        intestines.setMagazinePercent(0.2);
+                    } else {
+                        intestines.setMagazinePercent(0);
+                    }
+                }, shooter)
+            )
+        );
     }
 }

@@ -24,7 +24,8 @@ public class Intake extends SubsystemBase {
 
     private TunableNumber upPos = new TunableNumber("Intake/UpPosition", 9.);
     private TunableNumber midPos = new TunableNumber("Intake/MidPosition", 5.);
-    // private TunableNumber downPos = new TunableNumber("Intake/DownPosition", 0.);
+    private TunableNumber downPos = new TunableNumber("Intake/DownPosition", 0.);
+    
     private TunableNumber p = new TunableNumber("Intake/P", 0.);
     private TunableNumber d = new TunableNumber("Intake/D", 0.);
 
@@ -60,9 +61,9 @@ public class Intake extends SubsystemBase {
             case MID:
                 liftController.setReference(midPos.get(), CANSparkMax.ControlType.kPosition);
                 break;
-            // case DOWN:
-                // liftController.setReference(downPos.get(), CANSparkMax.ControlType.kPosition);
-                // break;
+            case DOWN:
+                liftController.setReference(downPos.get(), CANSparkMax.ControlType.kPosition);
+                break;
             default:
                 liftController.setReference(0, CANSparkMax.ControlType.kDutyCycle);
                 break;
