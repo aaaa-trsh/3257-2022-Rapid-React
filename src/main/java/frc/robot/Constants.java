@@ -8,7 +8,7 @@ import edu.wpi.first.math.util.Units;
 import frc.robot.utils.GeomUtil;
 
 public final class Constants {
-    public static boolean tuning = true; 
+    public static boolean tuning = false; 
     public static int timeout = 30; 
     public static class DriveConstants { 
         /* Drive Ports */
@@ -71,8 +71,8 @@ public final class Constants {
 
     public static class ClimbConstants {
         /* Motor Ports */
-        public static int arm1Port = 0;
-        public static int arm2Port = 1;
+        public static int arm1Port = 9;
+        public static int arm2Port = 7;
 
         /* Encoder Ports */
         public static int arm1EncoderPort = 0;
@@ -92,7 +92,7 @@ public final class Constants {
 
     public static class IntakeConstants {
         public static int rollerPort = 2;
-        public static int liftPort = 3;
+        public static int liftPort = 10;
     }
     /**
      * YOINKED FROM 6238 MECHANICAL ADVANTAGE

@@ -73,7 +73,7 @@ public class Drivetrain extends SubsystemBase {
         
         frontRight.configFactoryDefault();
         frontRight.setNeutralMode(NeutralMode.Coast);
-        frontRight.setInverted(InvertType.None);
+        frontRight.setInverted(InvertType.InvertMotorOutput);
         frontRight.configAllSettings(config);
 
         backRight.configFactoryDefault();

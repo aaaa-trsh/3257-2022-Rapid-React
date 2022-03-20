@@ -22,15 +22,18 @@ public class Intake extends SubsystemBase {
     private RelativeEncoder liftEncoder;
     private SparkMaxPIDController liftController;
 
-    private TunableNumber upPos = new TunableNumber("Intake/UpPosition", 0.);
+    private TunableNumber upPos = new TunableNumber("Intake/UpPosition", 9.);
+    private TunableNumber midPos = new TunableNumber("Intake/MidPosition", 5.);
+    // private TunableNumber downPos = new TunableNumber("Intake/DownPosition", 0.);
     private TunableNumber p = new TunableNumber("Intake/P", 0.);
     private TunableNumber d = new TunableNumber("Intake/D", 0.);
 
-    private IntakeState intakeState = IntakeState.DOWN;
+    private IntakeState intakeState = IntakeState.UP;
 
     public Intake() {
         liftMotor.restoreFactoryDefaults();
         liftEncoder = liftMotor.getEncoder();
+        liftEncoder.setPosition(0);
         liftController = liftMotor.getPIDController();
 
         liftController.setP(p.get());
@@ -38,8 +41,10 @@ public class Intake extends SubsystemBase {
         liftController.setD(d.get());
         liftController.setIZone(0);
         liftController.setFF(0);
-        liftController.setOutputRange(-1, 1);
+        liftController.setOutputRange(-0.6, .6);
     }
+
+    public void resetLiftEncoder() { liftEncoder.setPosition(0); }
     
     @Override
     public void periodic() {
@@ -48,9 +53,21 @@ public class Intake extends SubsystemBase {
             liftController.setD(d.get());
         }
         
-        if (intakeState == IntakeState.UP) {
-            liftController.setReference(upPos.get(), CANSparkMax.ControlType.kPosition);
+        switch (intakeState) {
+            case UP:
+                liftController.setReference(upPos.get(), CANSparkMax.ControlType.kPosition);
+                break;
+            case MID:
+                liftController.setReference(midPos.get(), CANSparkMax.ControlType.kPosition);
+                break;
+            // case DOWN:
+                // liftController.setReference(downPos.get(), CANSparkMax.ControlType.kPosition);
+                // break;
+            default:
+                liftController.setReference(0, CANSparkMax.ControlType.kDutyCycle);
+                break;
         }
+
         SmartDashboard.putNumber("intake lift pos", liftEncoder.getPosition());
     }
 
@@ -62,6 +79,6 @@ public class Intake extends SubsystemBase {
     }
     
     public static enum IntakeState {
-		DOWN, HALF, UP;
+		DOWN, MID, UP;
 	}
 }

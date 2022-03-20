@@ -12,12 +12,12 @@ import frc.robot.utils.tunables.TunableNumber;
 
 public class Climber extends SubsystemBase {
     private WPI_TalonSRX arm1 = new WPI_TalonSRX(ClimbConstants.arm1Port);
-    private DutyCycleEncoder arm1Encoder = new DutyCycleEncoder(ClimbConstants.arm1EncoderPort);
+    // private DutyCycleEncoder arm1Encoder = new DutyCycleEncoder(ClimbConstants.arm1EncoderPort);
     private WPI_TalonSRX arm2 = new WPI_TalonSRX(ClimbConstants.arm2Port);
-    private DutyCycleEncoder arm2Encoder = new DutyCycleEncoder(ClimbConstants.arm1EncoderPort);
+    // private DutyCycleEncoder arm2Encoder = new DutyCycleEncoder(ClimbConstants.arm1EncoderPort);
 
     private TunableNumber p = new TunableNumber("Climber/P", 0.002);
-    private TunableNumber d = new TunableNumber("Climber/d", 0.);
+    private TunableNumber d = new TunableNumber("Climber/D", 0.);
     
     private TunableNumber upPos = new TunableNumber("Climber/UpPosition", 0.);
 
@@ -29,12 +29,12 @@ public class Climber extends SubsystemBase {
 
     public Climber() {
         arm1.setNeutralMode(NeutralMode.Brake);
-        arm1Encoder.reset();
-        arm1Encoder.setDistancePerRotation(ClimbConstants.encoderCPR);
+        // arm1Encoder.reset();
+        // arm1Encoder.setDistancePerRotation(ClimbConstants.encoderCPR);
 
         arm2.setNeutralMode(NeutralMode.Brake);
-        arm2Encoder.reset();
-        arm2Encoder.setDistancePerRotation(ClimbConstants.encoderCPR);
+        // arm2Encoder.reset();
+        // arm2Encoder.setDistancePerRotation(ClimbConstants.encoderCPR);
         
         controller = new PIDController(p.get(), 0, d.get());
     }
@@ -55,11 +55,11 @@ public class Climber extends SubsystemBase {
         if (upPos.hasChanged()) { controller.setSetpoint(upPos.get()); }
 
         if (enabled) {
-            arm1.set(ControlMode.PercentOutput, arm1Up ? controller.calculate(arm1Encoder.getDistance()) : 0);
-            arm2.set(ControlMode.PercentOutput, arm2Up ? controller.calculate(arm2Encoder.getDistance()) : 0);
+            // arm1.set(ControlMode.PercentOutput, arm1Up ? controller.calculate(arm1Encoder.getDistance()) : 0);
+            // arm2.set(ControlMode.PercentOutput, arm2Up ? controller.calculate(arm2Encoder.getDistance()) : 0);
         } else {
-            arm1.set(ControlMode.PercentOutput, 0);
-            arm2.set(ControlMode.PercentOutput, 0);
+            // arm1.set(ControlMode.PercentOutput, 0);
+            // arm2.set(ControlMode.PercentOutput, 0);
         }
     }
 }

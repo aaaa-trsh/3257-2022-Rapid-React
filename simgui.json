@@ -2,11 +2,19 @@
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/LiveWindow/Climber": "Subsystem",
       "/LiveWindow/Drivetrain": "Subsystem",
+      "/LiveWindow/Shooter": "Subsystem",
       "/LiveWindow/Ungrouped/DifferentialDrive[1]": "DifferentialDrive",
       "/LiveWindow/Ungrouped/PIDController[1]": "PIDController",
       "/LiveWindow/Ungrouped/PIDController[2]": "PIDController",
       "/LiveWindow/Ungrouped/Scheduler": "Scheduler",
+      "/LiveWindow/Ungrouped/Talon FX [2]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [4]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [6]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [8]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon SRX [7]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon SRX [9]": "Motor Controller",
       "/LiveWindow/Ungrouped/navX-Sensor[4]": "Gyro",
       "/SmartDashboard/Field": "Field2d",
       "/SmartDashboard/field": "Field2d"
@@ -22,6 +30,17 @@
           "visible": true
         }
       }
+    }
+  },
+  "NetworkTables": {
+    "SmartDashboard": {
+      "Tunables": {
+        "Shooter": {
+          "open": true
+        },
+        "open": true
+      },
+      "open": true
     }
   }
 }

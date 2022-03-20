@@ -18,7 +18,7 @@ public abstract class Tunable<T> {
 
     public boolean hasChanged() {
         T currentValue = get();
-        if (currentValue != lastHasChangedValue) {
+        if (!currentValue.equals(lastHasChangedValue)) {
             lastHasChangedValue = currentValue;
             return true;
         }

@@ -35,7 +35,7 @@ public class Limelight {
     }
 
     public double getPitchError() {
-        return tableInstance.getEntry("tx").getDouble(0);
+        return tableInstance.getEntry("ty").getDouble(0);
     }
 
     public double getTargetArea() {

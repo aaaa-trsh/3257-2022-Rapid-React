@@ -33,9 +33,9 @@ public class Shooter extends SubsystemBase {
     private TunableNumber f = new TunableNumber("Shooter/F", 0.5);
     
     private TunableNumberArray[] interpolatingTreemapLandmarks = { 
-        new TunableNumberArray("Shooter/DistanceLandmarks", new double[0]),
-        new TunableNumberArray("Shooter/LowerFlywheelLandmarks", new double[0]),
-        new TunableNumberArray("Shooter/UpperFlywheelLandmarks", new double[0]),
+        new TunableNumberArray("Shooter/DistanceLandmarks", new double[]{6, -3, -12}),
+        new TunableNumberArray("Shooter/LowerFlywheelLandmarks", new double[]{330, 240, 120}),
+        new TunableNumberArray("Shooter/UpperFlywheelLandmarks", new double[]{770, 960, 1190}),
     };
 
     private InterpolatingTreeMap<Pair<Double, Double>> interpolatingTreemap = new InterpolatingTreeMap<>();
@@ -43,6 +43,17 @@ public class Shooter extends SubsystemBase {
     private double lowerRPM, upperRPM;
 
     public Shooter() {
+        var interpolatingTreemap = new InterpolatingTreeMap<Pair<Double, Double>>();
+        double[] dist = interpolatingTreemapLandmarks[0].get();
+        double[] low = interpolatingTreemapLandmarks[1].get();
+        double[] up = interpolatingTreemapLandmarks[2].get();
+
+        for (int i = 0; i < dist.length; i++) {
+            interpolatingTreemap.put(dist[i], new TupleInterpolable(low[i], up[i]));
+        }
+        this.interpolatingTreemap = interpolatingTreemap;
+
+        limelight.setLightState(0);
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.nominalOutputForward = 0;
         config.nominalOutputReverse = 0;
@@ -52,7 +63,7 @@ public class Shooter extends SubsystemBase {
         config.slot0.kI = i.get();
         config.slot0.kD = d.get();
         config.slot0.kF = f.get();
-        // config.closedloopRamp = 0.1;
+        config.closedloopRamp = 0.7;
         config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
 
         // lower flywheel config
@@ -75,7 +86,12 @@ public class Shooter extends SubsystemBase {
 
     public void setShooterFromDistance(double distance) {
         var shooterSpeeds = interpolatingTreemap.interpolate(distance);
-        setShooterSpeeds(shooterSpeeds.getFirst(), shooterSpeeds.getSecond());
+        System.out.println(shooterSpeeds.getFirst() + " | " + shooterSpeeds.getSecond());
+        setShooterSpeeds(shooterSpeeds.getFirst()+50, shooterSpeeds.getSecond()+50);
+    }
+    
+    public double getLimelightDistance() {
+        return (1 - ((getLimelight().getPitchError() / 48.) + 0.5)) * 24;
     }
 
     @Override
@@ -90,12 +106,12 @@ public class Shooter extends SubsystemBase {
             upperFlywheel.config_kI(0, i.get(), Constants.timeout);
             upperFlywheel.config_kD(0, d.get(), Constants.timeout);
             upperFlywheel.config_kF(0, f.get(), Constants.timeout);
-            System.out.println(
-                " P: " + p.get() + 
-                " I: " + i.get() + 
-                " D: " + d.get() + 
-                " F: " + f.get()
-            );
+            // System.out.println(
+            //     " P: " + p.get() + 
+            //     " I: " + i.get() + 
+            //     " D: " + d.get() + 
+            //     " F: " + f.get()
+            // );
         }
 
         if (interpolatingTreemapLandmarks[0].hasChanged() | interpolatingTreemapLandmarks[1].hasChanged() | interpolatingTreemapLandmarks[2].hasChanged()) {
@@ -107,8 +123,12 @@ public class Shooter extends SubsystemBase {
             for (int i = 0; i < dist.length; i++) {
                 interpolatingTreemap.put(dist[i], new TupleInterpolable(low[i], up[i]));
             }
-
             this.interpolatingTreemap = interpolatingTreemap;
+            System.out.println(
+                interpolatingTreemapLandmarks[0].hasChanged() + " " + 
+                interpolatingTreemapLandmarks[1].hasChanged() + " " + 
+                interpolatingTreemapLandmarks[2].hasChanged() + " "
+            );
         }
         
         if (lowerRPM > 0 | upperRPM > 0) {

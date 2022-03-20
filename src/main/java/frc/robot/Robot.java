@@ -7,9 +7,9 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 public class Robot extends TimedRobot {
     private Command autonomousCommand;
+    private RobotContainer robotContainer = new RobotContainer();
     @Override
     public void robotInit() {
-        new RobotContainer();
     }
 
     @Override
@@ -17,6 +17,7 @@ public class Robot extends TimedRobot {
         // TODO: REMOVE IN COMP! INCREASES NETWORK DATA AND CAN CAUSE LAG!
         NetworkTableInstance.getDefault().flush();
         CommandScheduler.getInstance().run();
+        robotContainer.periodic();
     }
 
     @Override

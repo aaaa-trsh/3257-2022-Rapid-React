@@ -13,6 +13,7 @@ import frc.robot.subsystems.Intestines;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Intake.IntakeState;
 import frc.robot.utils.control.XboxJoystick;
+import frc.robot.utils.tunables.TunableNumber;
 
 public class RobotContainer {
     private final Drivetrain drivetrain  = new Drivetrain();
@@ -22,15 +23,18 @@ public class RobotContainer {
     private final Intake intake          = new Intake();
 
     private boolean intestinesOverride = false;
+    private TunableNumber shooterRatio = new TunableNumber("Shooter/Ratio", 0.);
+    private TunableNumber magPercent = new TunableNumber("Shooter/MagSpeed", 0.5);
     
     private final XboxJoystick driverController = new XboxJoystick(IOConstants.driverControllerPort);
-    private double shooterPwr = 300;
+    private final XboxJoystick operatorController = new XboxJoystick(IOConstants.operatorControllerPort);
+    private double shooterPwr = 1200;
     public RobotContainer() {
         drivetrain.setDefaultCommand(
             new RunCommand(
                 () -> drivetrain.arcadeDrive(
-                    -driverController.getX()*.7,
-                    -driverController.getY()
+                    -driverController.getLeftStickYValue(),
+                    -driverController.getRightStickXValue() * .6
                 ),   
                 drivetrain
             )
@@ -64,14 +68,19 @@ public class RobotContainer {
          **/
 
         // LBUMPER - MAGAZINE IN
-        driverController.xButton
-            .whenActive(() -> { intestines.setMagazinePercent(.5); intestinesOverride = true; }, intestines)
+        operatorController.xButton
+            .whenActive(() -> { System.out.println("aa");intestines.setMagazinePercent(0.2); intestinesOverride = true; }, intestines)
             .whenInactive(() -> { intestines.setMagazinePercent(0); intestinesOverride = false; }, intestines);
 
-        // RBUMPER - MAGAZINE + INTAKE OUT
-        driverController.rightBumper
-            .whenActive(() -> { intestines.setMagazinePercent(-.5); intake.setRollerPercent(-.3); intestinesOverride = true; }, intestines)
-            .whenInactive(() -> { intestines.setMagazinePercent(0); intake.setRollerPercent(0); intestinesOverride = false; }, intestines);
+        // RBUMPER - MAGAZINE OUT
+        operatorController.rightBumper
+            .whenActive(() -> { intestines.setMagazinePercent(-.5); intestinesOverride = true; }, intestines)
+            .whenInactive(() -> { intestines.setMagazinePercent(0); intestinesOverride = false; }, intestines);
+        
+        // RBUMPER - INTAKE OUT
+        driverController.leftBumper
+            .whenActive(() -> { intake.setRollerPercent(-.3);}, intestines)
+            .whenInactive(() -> { intake.setRollerPercent(0);}, intestines);
 
         // RTRIGGER - INTAKE UP
         driverController.rightTriggerButton
@@ -85,40 +94,56 @@ public class RobotContainer {
             .whenInactive(() -> { intake.setIntakeState(Intake.IntakeState.UP); intake.setRollerPercent(0); }, intake);
         
         // X - AUTO ALIGN SHOOTER
-        driverController.xButton
-            .whenActive(
-                new PIDCommand(
-                    new PIDController(0.1, 0, 0),
-                    () ->shooter.getLimelight().getPitchError(),
-                    0.,
-                    (output) -> { drivetrain.arcadeDrive(output, -driverController.getY()); },
-                    drivetrain
-                )
-            );
+        // driverController.xButton
+        //     .whenActive(
+        //         new PIDCommand(
+        //             new PIDController(0.1, 0, 0),
+        //             () ->shooter.getLimelight().getPitchError(),
+        //             0.,
+        //             (output) -> { drivetrain.arcadeDrive(output, -driverController.getY()); },
+        //             drivetrain
+        //         )
+        //     );
         
         // LTRIGGER - SHOOTER ON
-        driverController.leftTriggerButton
-            .whenActive(() -> shooter.setShooterSpeeds(shooterPwr, shooterPwr))
+        operatorController.leftTriggerButton
+            .whileHeld(new InstantCommand(() -> {
+                if (shooter.getLimelight().hasTarget()) {
+                    shooter.setShooterFromDistance(shooter.getLimelight().getPitchError());
+                }// else {
+                    // shooter.setShooterSpeeds(shooterPwr * (1.-shooterRatio.get()), shooterPwr * shooterRatio.get());
+                // }
+            }, shooter))
             .whenInactive(() -> shooter.setShooterSpeeds(0, 0));
 
         // DPAD - VERTICAL: ARM1, HORIZONTAL: ARM2
-        // driverController.Dpad.Up
-        //     .whenActive(() -> climber.setArm1(0.1), climber);
-        // driverController.Dpad.Down
-        //     .whenActive(() -> climber.setArm1(-0.1), climber);
+        // driverController.yButton
+        //     .whenActive(() -> climber.setArm1(1), climber)
+        //     .whenInactive(() -> climber.setArm1(0), climber);
+        // driverController.aButton
+        //     .whenActive(() -> climber.setArm1(-1), climber)
+        //     .whenInactive(() -> climber.setArm1(0), climber);
         // driverController.Dpad.Right
         //     .whenActive(() -> climber.setArm2(0.1), climber);
         // driverController.Dpad.Left
         //     .whenActive(() -> climber.setArm2(-0.1), climber);
 
         // Y - SHOOTER RPM UP
-        driverController.yButton
-            .whenActive(new InstantCommand(() -> {shooterPwr += 200; System.out.println("SHOOTER PWR UP. NOW " + shooterPwr);}));
+        operatorController.yButton
+            .whenActive(new InstantCommand(() -> {shooterPwr += 100; System.out.println("SHOOTER PWR UP. NOW " + shooterPwr);}));
         // A - SHOOTER RPM DOWN
-        driverController.aButton
-            .whenActive(new InstantCommand(() -> {shooterPwr -= 200; System.out.println("SHOOTER PWR DOWN. NOW " + shooterPwr);}));
+        operatorController.aButton
+            .whenActive(new InstantCommand(() -> {shooterPwr -= 100; System.out.println("SHOOTER PWR DOWN. NOW " + shooterPwr);}));
     }
 
+    public void periodic() {
+        if (shooterRatio.hasChanged()) {
+            System.out.println("SHOOTER RATIO - LOW: " + Math.round(shooterRatio.get() * 100)/100. + " HIGH:" + Math.round((1 - shooterRatio.get()) * 100)/100.);
+        }
+        if (magPercent.hasChanged()) {
+            System.out.println("MAG PERCENT -  " + Math.round(magPercent.get() * 100)/100.);
+        }
+    }
     public Command getAutonomousCommand() {
         return null;
     }
