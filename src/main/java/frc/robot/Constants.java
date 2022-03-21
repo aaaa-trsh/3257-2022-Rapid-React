@@ -8,8 +8,8 @@ import edu.wpi.first.math.util.Units;
 import frc.robot.utils.GeomUtil;
 
 public final class Constants {
-    public static boolean tuning = true; 
-    public static boolean debugControl = false; 
+    public static boolean tuning = false; 
+    public static boolean debugControl = true; 
     public static int timeout = 30; 
     public static class DriveConstants { 
         /* Drive Ports */
@@ -58,8 +58,8 @@ public final class Constants {
         // public static double flywheelGearing = 1.0;
         
         public static double P = 0.14;
-        public static double I = 0.1;
-        public static double D = 0.;
+        public static double I = 0.;
+        public static double D = 0.1;
         public static double F = 0.5;
 
         public static double rampRate = 0.7;

@@ -1,11 +1,5 @@
 {
   "NetworkTables": {
-    "LiveWindow": {
-      "Shooter": {
-        "open": true
-      },
-      "open": true
-    },
     "SmartDashboard": {
       "TunableNumbers": {
         "Shooter": {
@@ -13,16 +7,50 @@
         },
         "open": true
       },
+      "Tunables": {
+        "Climber": {
+          "open": true
+        },
+        "Drive": {
+          "open": true
+        },
+        "Intake": {
+          "open": true
+        },
+        "Shooter": {
+          "open": true
+        },
+        "open": true
+      },
+      "open": true
+    },
+    "limelight-bottom": {
+      "open": true
+    },
+    "limelight-shooter": {
       "open": true
     },
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/LiveWindow/Climber": "Subsystem",
+      "/LiveWindow/Drivetrain": "Subsystem",
       "/LiveWindow/Intestines": "Subsystem",
+      "/LiveWindow/Shooter": "Subsystem",
+      "/LiveWindow/Ungrouped/DifferentialDrive[1]": "DifferentialDrive",
       "/LiveWindow/Ungrouped/DigitalInput[0]": "Digital Input",
+      "/LiveWindow/Ungrouped/PIDController[1]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[2]": "PIDController",
       "/LiveWindow/Ungrouped/Scheduler": "Scheduler",
       "/LiveWindow/Ungrouped/Spark[2]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [2]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [4]": "Motor Controller",
       "/LiveWindow/Ungrouped/Talon FX [6]": "Motor Controller",
-      "/LiveWindow/Ungrouped/Talon FX [8]": "Motor Controller"
+      "/LiveWindow/Ungrouped/Talon FX [8]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon SRX [7]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon SRX [9]": "Motor Controller",
+      "/LiveWindow/Ungrouped/navX-Sensor[4]": "Gyro",
+      "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/field": "Field2d"
     }
   },
   "NetworkTables Settings": {
@@ -38,7 +66,7 @@
               "autoFit": true
             }
           ],
-          "height": 347,
+          "height": 382,
           "series": [
             {
               "color": [

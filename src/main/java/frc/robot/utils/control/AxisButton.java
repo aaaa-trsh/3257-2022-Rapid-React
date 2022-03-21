@@ -38,7 +38,7 @@ public class AxisButton extends Button {
 		}
 	}
 
-	static enum ThresholdType {
+	public static enum ThresholdType {
 		LESS_THAN, GREATER_THAN, EXACT, POV;
 	}
 

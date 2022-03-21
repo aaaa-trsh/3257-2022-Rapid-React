@@ -23,7 +23,7 @@ public class Shooter extends SubsystemBase {
     private WPI_TalonFX lowerFlywheel = new WPI_TalonFX(ShooterConstants.lowerFlywheelPort);
     private WPI_TalonFX upperFlywheel = new WPI_TalonFX(ShooterConstants.upperFlywheelPort);
     
-    private Limelight limelight = new Limelight("limelight-bottom");
+    private Limelight limelight = new Limelight("limelight-shooter");
 
     private TunableNumber p = new TunableNumber("Shooter/P", ShooterConstants.P);
     private TunableNumber i = new TunableNumber("Shooter/I", ShooterConstants.I);
@@ -31,9 +31,9 @@ public class Shooter extends SubsystemBase {
     private TunableNumber f = new TunableNumber("Shooter/F", ShooterConstants.F);
     
     private TunableNumberArray[] interpolatingTreemapLandmarks = { 
-        new TunableNumberArray("Shooter/DistanceLandmarks", new double[]{6, -3, -12}),
-        new TunableNumberArray("Shooter/LowerFlywheelLandmarks", new double[]{330, 240, 120}),
-        new TunableNumberArray("Shooter/UpperFlywheelLandmarks", new double[]{770, 960, 1190}),
+        new TunableNumberArray("Shooter/DistanceLandmarks", new double[]{4, 0, -4, -8, -14, -18, -21}),
+        new TunableNumberArray("Shooter/BaseSpeedLandmarks", new double[]{1000, 1000, 1000, 1100, 1200, 1200, 1400}),
+        new TunableNumberArray("Shooter/RatioLandmarks", new double[]{0., 0.1, 0.15, 0.17, 0.25, 0.25, 0.9}),
     };
 
     private InterpolatingTreeMap<Pair<Double, Double>> interpolatingTreemap = new InterpolatingTreeMap<>();
@@ -61,7 +61,7 @@ public class Shooter extends SubsystemBase {
         config.slot0.kI = i.get();
         config.slot0.kD = d.get();
         config.slot0.kF = f.get();
-        config.closedloopRamp = ShooterConstants.rampRate;
+        config.closedloopRamp = 0.7;
         config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
 
         // lower flywheel config
@@ -84,8 +84,12 @@ public class Shooter extends SubsystemBase {
 
     public void setShooterFromDistance(double distance) {
         var shooterSpeeds = interpolatingTreemap.interpolate(distance);
+        setShooterSpeeds(
+            (shooterSpeeds.getFirst() * (1. - shooterSpeeds.getSecond())) - 50, 
+            (shooterSpeeds.getFirst() * shooterSpeeds.getSecond()) - 50
+        );
         System.out.println(shooterSpeeds.getFirst() + " | " + shooterSpeeds.getSecond());
-        setShooterSpeeds(shooterSpeeds.getFirst()+50, shooterSpeeds.getSecond()+50);
+        // setShooterSpeeds(shooterSpeeds.getFirst()+50, shooterSpeeds.getSecond()+50);
     }
 
     public void setShooterFromDistance() { setShooterFromDistance(getLimelight().getPitchError()); }
@@ -115,11 +119,11 @@ public class Shooter extends SubsystemBase {
         if (interpolatingTreemapLandmarks[0].hasChanged() | interpolatingTreemapLandmarks[1].hasChanged() | interpolatingTreemapLandmarks[2].hasChanged()) {
             var interpolatingTreemap = new InterpolatingTreeMap<Pair<Double, Double>>();
             double[] dist = interpolatingTreemapLandmarks[0].get();
-            double[] low = interpolatingTreemapLandmarks[1].get();
-            double[] up = interpolatingTreemapLandmarks[2].get();
+            double[] baseSpeeds = interpolatingTreemapLandmarks[1].get();
+            double[] ratios = interpolatingTreemapLandmarks[2].get();
 
             for (int i = 0; i < dist.length; i++) {
-                interpolatingTreemap.put(dist[i], new TupleInterpolable(low[i], up[i]));
+                interpolatingTreemap.put(dist[i], new TupleInterpolable(baseSpeeds[i], ratios[i]));
             }
             this.interpolatingTreemap = interpolatingTreemap;
             System.out.println(

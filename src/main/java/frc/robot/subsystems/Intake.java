@@ -25,13 +25,14 @@ public class Intake extends SubsystemBase {
     private TunableNumber upPos = new TunableNumber("Intake/UpPosition", 9.);
     private TunableNumber midPos = new TunableNumber("Intake/MidPosition", 5.);
     private TunableNumber downPos = new TunableNumber("Intake/DownPosition", 0.);
-    
+    private double targetPos = 0;
     private TunableNumber p = new TunableNumber("Intake/P", 0.);
     private TunableNumber d = new TunableNumber("Intake/D", 0.);
 
     private IntakeState intakeState = IntakeState.UP;
 
     public Intake() {
+        targetPos = upPos.get();
         liftMotor.restoreFactoryDefaults();
         liftEncoder = liftMotor.getEncoder();
         liftEncoder.setPosition(0);
@@ -56,20 +57,22 @@ public class Intake extends SubsystemBase {
         
         switch (intakeState) {
             case UP:
-                liftController.setReference(upPos.get(), CANSparkMax.ControlType.kPosition);
+                targetPos = upPos.get();
                 break;
             case MID:
-                liftController.setReference(midPos.get(), CANSparkMax.ControlType.kPosition);
+                targetPos = midPos.get();
                 break;
             case DOWN:
-                liftController.setReference(downPos.get(), CANSparkMax.ControlType.kPosition);
+                targetPos = downPos.get();
                 break;
             default:
-                liftController.setReference(0, CANSparkMax.ControlType.kDutyCycle);
+                targetPos = 0;
                 break;
-        }
+            }
+        liftController.setReference(targetPos, CANSparkMax.ControlType.kPosition);
 
         SmartDashboard.putNumber("intake lift pos", liftEncoder.getPosition());
+        SmartDashboard.putNumber("intake lift target pos", targetPos);
     }
 
     public void setRollerPercent(double percent) { rollerMotor.set(-percent); }

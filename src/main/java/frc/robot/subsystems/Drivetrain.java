@@ -39,7 +39,7 @@ public class Drivetrain extends SubsystemBase {
     private TunableNumber turnP = new TunableNumber("Drive/TurnP", 0.00008);
     private TunableNumber turnD = new TunableNumber("Drive/TurnD", 0.);
 
-    private PIDController turnController = new PIDController(.1, 0, 0);
+    private PIDController turnController = new PIDController(1000, 0, 0);
     // private PIDController leftController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
     // private PIDController rightController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
 
@@ -55,7 +55,7 @@ public class Drivetrain extends SubsystemBase {
 
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.closedloopRamp = 0.1;
-        config.openloopRamp = 0.2;
+        config.openloopRamp = 0;
         config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
         
         // Reset all the drivetrain controllers
