@@ -8,7 +8,7 @@ import edu.wpi.first.math.util.Units;
 import frc.robot.utils.GeomUtil;
 
 public final class Constants {
-    public static boolean tuning = false; 
+    public static boolean tuning = true; 
     public static boolean debugControl = true; 
     public static int timeout = 30; 
     public static class DriveConstants { 
@@ -63,7 +63,7 @@ public final class Constants {
         public static double F = 0.5;
 
         public static double rampRate = 0.7;
-        public static double rpmTolerance = 20 * 2048;
+        public static double rpmTolerance = 30;
     }
 
     public static class ClimbConstants {

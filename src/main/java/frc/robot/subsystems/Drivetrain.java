@@ -36,7 +36,7 @@ public class Drivetrain extends SubsystemBase {
     private DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(new Rotation2d(), new Pose2d());
     private SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(DriveConstants.sVolts, DriveConstants.vVoltSecondsPerMeter, DriveConstants.aVoltSecondsSquaredPerMeter);
 
-    private TunableNumber turnP = new TunableNumber("Drive/TurnP", 0.00008);
+    private TunableNumber turnP = new TunableNumber("Drive/TurnP", 0.1);
     private TunableNumber turnD = new TunableNumber("Drive/TurnD", 0.);
 
     private PIDController turnController = new PIDController(1000, 0, 0);
@@ -60,25 +60,25 @@ public class Drivetrain extends SubsystemBase {
         
         // Reset all the drivetrain controllers
         frontLeft.configFactoryDefault();
-        frontLeft.setNeutralMode(NeutralMode.Coast);
+        frontLeft.setNeutralMode(NeutralMode.Brake);
         frontLeft.setInverted(InvertType.InvertMotorOutput);
         frontLeft.configAllSettings(config);
 
         backLeft.configFactoryDefault();
         backLeft.follow(frontLeft);
-        backLeft.setNeutralMode(NeutralMode.Coast);
+        backLeft.setNeutralMode(NeutralMode.Brake);
         backLeft.setInverted(InvertType.FollowMaster);
         backLeft.configAllSettings(config);
         
         frontRight.configFactoryDefault();
-        frontRight.setNeutralMode(NeutralMode.Coast);
+        frontRight.setNeutralMode(NeutralMode.Brake);
         frontRight.setInverted(InvertType.None);
         frontRight.configAllSettings(config);
 
         backRight.configFactoryDefault();
         backRight.follow(frontRight);
         backRight.setInverted(InvertType.FollowMaster);
-        backRight.setNeutralMode(NeutralMode.Coast);
+        backRight.setNeutralMode(NeutralMode.Brake);
         backRight.configAllSettings(config);
 
         SmartDashboard.putData("Field", field);

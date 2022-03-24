@@ -29,13 +29,13 @@ public class Intake extends SubsystemBase {
     private TunableNumber p = new TunableNumber("Intake/P", 0.);
     private TunableNumber d = new TunableNumber("Intake/D", 0.);
 
-    private IntakeState intakeState = IntakeState.UP;
+    private IntakeState intakeState = IntakeState.DOWN;
 
     public Intake() {
         targetPos = upPos.get();
         liftMotor.restoreFactoryDefaults();
         liftEncoder = liftMotor.getEncoder();
-        liftEncoder.setPosition(0);
+        liftEncoder.setPosition(upPos.get());
         liftController = liftMotor.getPIDController();
 
         liftController.setP(p.get());
@@ -43,7 +43,7 @@ public class Intake extends SubsystemBase {
         liftController.setD(d.get());
         liftController.setIZone(0);
         liftController.setFF(0);
-        liftController.setOutputRange(-0.6, .6);
+        liftController.setOutputRange(-.4, .7);
     }
 
     public void resetLiftEncoder() { liftEncoder.setPosition(0); }
