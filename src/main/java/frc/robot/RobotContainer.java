@@ -103,10 +103,10 @@ public class RobotContainer {
             }, shooter))
             .whenInactive(() -> { shooter.setShooterSpeeds(0, 0); shooter.getLimelight().setLightState(1); });
         
-        new AxisButton(operatorController, XboxAxis.LEFT_Y, -.5, ThresholdType.LESS_THAN)
-            .whenActive(() -> {intake.setIntakeState(IntakeState.UP); System.out.println("intk up");});
-        new AxisButton(operatorController, XboxAxis.LEFT_Y, .5, ThresholdType.GREATER_THAN)
-            .whenActive(() -> {intake.setIntakeState(IntakeState.DOWN); System.out.println("intk down");});
+        // new AxisButton(operatorController, XboxAxis.LEFT_Y, -.5, ThresholdType.LESS_THAN)
+        //     .whenActive(() -> {intake.setIntakeState(IntakeState.UP); System.out.println("intk up");});
+        // new AxisButton(operatorController, XboxAxis.LEFT_Y, .5, ThresholdType.GREATER_THAN)
+        //     .whenActive(() -> {intake.setIntakeState(IntakeState.DOWN); System.out.println("intk down");});
             // .whenInactive(() -> intake.setIntakeState(IntakeState.DOWN));
 
         operatorController.yButton
@@ -188,38 +188,38 @@ public class RobotContainer {
                 new InstantCommand(() -> intake.setRollerPercent(0), intake)
                 .andThen(new WaitCommand(0.5).andThen(new InstantCommand(() -> intake.setIntakeState(Intake.IntakeState.UP)))));
            
-        driverController.yButton
-            .whenActive(() -> climber.setArm1(1), climber)
-            .whenInactive(() -> climber.setArm1(0), climber);
-        driverController.aButton
-            .whenActive(() -> climber.setArm1(-1), climber)
-            .whenInactive(() -> climber.setArm1(0), climber);
-        driverController.xButton
-            .whenActive(() -> climber.setArm2(1), climber)
-            .whenInactive(() -> climber.setArm2(0), climber);
-        driverController.bButton
-            .whenActive(() -> climber.setArm2(-1), climber)
-            .whenInactive(() -> climber.setArm2(0), climber);
-        // // X - MAGAZINE OUT
-        // driverController.xButton
-        //     .whenActive(() -> { intestines.setMagazinePercent(-.5); intestinesOverride = true; }, intestines)
-        //     .whenInactive(() -> { intestines.setMagazinePercent(0); intestinesOverride = false; }, intestines);
-        // // Y - SHOOTER RPM UP
         // driverController.yButton
-        //     .whenActive(new InstantCommand(() -> {shooterPwr += 100; System.out.println("SHOOTER PWR UP. NOW " + shooterPwr);}));
-        // // A - SHOOTER RPM DOWN
+        //     .whenActive(() -> climber.setArm1(1), climber)
+        //     .whenInactive(() -> climber.setArm1(0), climber);
         // driverController.aButton
-        //     .whenActive(new InstantCommand(() -> {shooterPwr -= 100; System.out.println("SHOOTER PWR DOWN. NOW " + shooterPwr);}));
-        // // B - VISION ALIGN
+        //     .whenActive(() -> climber.setArm1(-1), climber)
+        //     .whenInactive(() -> climber.setArm1(0), climber);
+        // driverController.xButton
+        //     .whenActive(() -> climber.setArm2(1), climber)
+        //     .whenInactive(() -> climber.setArm2(0), climber);
         // driverController.bButton
-        //     .whenActive(
-        //         new RunCommand(() -> {
-        //             double output = -driverController.getLeftStickXValue();
-        //             if (shooter.getLimelight().hasTarget()) { output = pid.calculate(shooter.getLimelight().getYawError(), 0); }
-        //             drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 0.5), output));
-        //         }, drivetrain).withTimeout(2)
-        //     )
-        //     .whenInactive(() -> drivetrain.tankDrive(0, 0));
+        //     .whenActive(() -> climber.setArm2(-1), climber)
+        //     .whenInactive(() -> climber.setArm2(0), climber);
+        // X - MAGAZINE OUT
+        driverController.xButton
+            .whenActive(() -> { intestines.setMagazinePercent(-.5); intestinesOverride = true; }, intestines)
+            .whenInactive(() -> { intestines.setMagazinePercent(0); intestinesOverride = false; }, intestines);
+        // Y - SHOOTER RPM UP
+        driverController.yButton
+            .whenActive(new InstantCommand(() -> {shooterPwr += 100; System.out.println("SHOOTER PWR UP. NOW " + shooterPwr);}));
+        // A - SHOOTER RPM DOWN
+        driverController.aButton
+            .whenActive(new InstantCommand(() -> {shooterPwr -= 100; System.out.println("SHOOTER PWR DOWN. NOW " + shooterPwr);}));
+        // B - VISION ALIGN
+        driverController.bButton
+            .whenActive(
+                new RunCommand(() -> {
+                    double output = -driverController.getLeftStickXValue();
+                    if (shooter.getLimelight().hasTarget()) { output = pid.calculate(shooter.getLimelight().getYawError(), 0); }
+                    drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 0.5), output));
+                }, drivetrain).withTimeout(2)
+            )
+            .whenInactive(() -> drivetrain.tankDrive(0, 0));
 
         // LBUMPER - MAGAZINE IN
         driverController.rightBumper
@@ -235,13 +235,16 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
+        return null;
         // 2 BALL AUTO ------------------------
+        /*
         return new SequentialCommandGroup(
             new InstantCommand(() -> {
                 intake.setIntakeState(IntakeState.DOWN);
                 intake.setRollerPercent(0.7);
                 System.out.println("set intake");
             }),
+            new RunCommand(() -> drivetrain.tankDrive(.8,.8), drivetrain).withTimeout(.2),
             new RunCommand(() -> drivetrain.tankDrive(-.8,-.8), drivetrain).withTimeout(1.5),
             new RunCommand(() -> {drivetrain.arcadeDrive(0,-.7); intake.setRollerPercent(0);}, drivetrain).withTimeout(1),
             new RunCommand(() -> drivetrain.arcadeDrive(0,0), drivetrain).withTimeout(0.4),
@@ -265,6 +268,6 @@ public class RobotContainer {
                 shooter.setShooterSpeeds(0, 0);
                 intestines.setMagazinePercent(0);
             })
-        );
+        );*/
     }
 }
