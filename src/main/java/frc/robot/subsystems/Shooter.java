@@ -85,8 +85,8 @@ public class Shooter extends SubsystemBase {
     public void setShooterFromDistance(double distance) {
         var shooterSpeeds = interpolatingTreemap.interpolate(distance);
         setShooterSpeeds(
-            (shooterSpeeds.getFirst() * (1. - shooterSpeeds.getSecond())) + 30, 
-            (shooterSpeeds.getFirst() * shooterSpeeds.getSecond()) + 30
+            (shooterSpeeds.getFirst() * (1. - shooterSpeeds.getSecond())) + 40, 
+            (shooterSpeeds.getFirst() * shooterSpeeds.getSecond()) + 40
         );
         System.out.println(shooterSpeeds.getFirst() + " | " + shooterSpeeds.getSecond());
         // setShooterSpeeds(shooterSpeeds.getFirst()+50, shooterSpeeds.getSecond()+50);
