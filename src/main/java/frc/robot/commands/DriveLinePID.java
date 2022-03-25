@@ -2,7 +2,6 @@ package frc.robot.commands;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import frc.robot.Constants.DriveConstants;
 import frc.robot.subsystems.Drivetrain;
 
 public class DriveLinePID extends CommandBase {
@@ -11,11 +10,10 @@ public class DriveLinePID extends CommandBase {
     private double targetLeft, targetRight;
     private double distance;
     private PIDController controller;
-    private double tolerance, maxOutput;
+    private double maxOutput;
 
-    public DriveLinePID(PIDController controller, double distance, double tolerance, double maxOutput, Drivetrain drivetrain) {
+    public DriveLinePID(PIDController controller, double distance, double maxOutput, Drivetrain drivetrain) {
         this.drivetrain = drivetrain;
-        this.tolerance = tolerance;
         this.controller = controller;
         this.distance = distance;
 

@@ -15,7 +15,7 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         // TODO: REMOVE IN COMP! INCREASES NETWORK DATA AND CAN CAUSE LAG!
-        NetworkTableInstance.getDefault().flush();
+        // NetworkTableInstance.getDefault().flush();
         CommandScheduler.getInstance().run();
         robotContainer.periodic();
     }

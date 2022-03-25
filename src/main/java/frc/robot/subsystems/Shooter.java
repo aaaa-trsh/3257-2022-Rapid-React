@@ -51,7 +51,7 @@ public class Shooter extends SubsystemBase {
         }
         this.interpolatingTreemap = interpolatingTreemap;
 
-        limelight.setLightState(1);
+        limelight.setLightState(0);
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.nominalOutputForward = 0;
         config.nominalOutputReverse = 0;
@@ -85,8 +85,8 @@ public class Shooter extends SubsystemBase {
     public void setShooterFromDistance(double distance) {
         var shooterSpeeds = interpolatingTreemap.interpolate(distance);
         setShooterSpeeds(
-            (shooterSpeeds.getFirst() * (1. - shooterSpeeds.getSecond())) + 50, 
-            (shooterSpeeds.getFirst() * shooterSpeeds.getSecond()) + 50
+            (shooterSpeeds.getFirst() * (1. - shooterSpeeds.getSecond())) + 30, 
+            (shooterSpeeds.getFirst() * shooterSpeeds.getSecond()) + 30
         );
         System.out.println(shooterSpeeds.getFirst() + " | " + shooterSpeeds.getSecond());
         // setShooterSpeeds(shooterSpeeds.getFirst()+50, shooterSpeeds.getSecond()+50);
