@@ -1,6 +1,7 @@
 package frc.robot;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
@@ -37,20 +38,10 @@ public class RobotContainer {
     private final XboxJoystick operatorController = new XboxJoystick(IOConstants.operatorControllerPort);
     private double shooterPwr = 1200;
     
+    private SendableChooser<Command> autoChooser = new SendableChooser<>();
+
     public RobotContainer() {
-        
-        // mmmmmmmm autofeed nicee
-        // intestines.setDefaultCommand(
-        //     new RunCommand(
-        //         () ->  {
-        //             if (!intestinesOverride)
-        //                 intestines.setMagazinePercent(intestines.isBallInQueue() ? 0.3 : 0);
-        //             // intestines.setMagazinePercent(0.1);
-        //             // intestines.setIntakePercent(-0.6);
-        //         }, 
-        //         intestines
-        //     )
-        // ); 
+        configureAutonomousChooser();
         if (Constants.debugControl) {
             drivetrain.setDefaultCommand(
                 new RunCommand(
@@ -75,6 +66,43 @@ public class RobotContainer {
             ); 
             configureButtonBindings();
         }
+    }
+
+    private void configureAutonomousChooser() {
+        Command auto1Ball = new SequentialCommandGroup(
+            new RunCommand(() -> drivetrain.tankDrive(.9,.9), drivetrain).withTimeout(.8),
+            new ParallelCommandGroup(
+                new RunCommand(() -> {
+                    double output = 0.3;
+                    shooter.getLimelight().setLightState(0);
+                    if (shooter.getLimelight().hasTarget()) { output = pid.calculate(shooter.getLimelight().getYawError(), 0); }
+                    drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 0.5), output));
+                }, drivetrain),
+                new RunCommand(() -> {
+                    if (shooter.getLimelight().hasTarget())
+                        shooter.setShooterFromDistance();
+                }, shooter),
+                new WaitCommand(1).andThen(new InstantCommand(()->intestines.setMagazinePercent(0.1)))
+            ).withTimeout(10),
+            new InstantCommand(() -> {
+                shooter.setShooterSpeeds(0, 0);
+                intestines.setMagazinePercent(0);
+            })
+        );
+        Command auto2Ball = new SequentialCommandGroup(
+            new RunCommand(() -> drivetrain.tankDrive(.9,.9), drivetrain).withTimeout(.3)
+        );
+        Command autoRude2Ball = new SequentialCommandGroup(
+
+        );
+        Command auto3Ball = new SequentialCommandGroup(
+
+        );
+        
+        autoChooser.addOption("1 Ball", auto1Ball);
+        autoChooser.addOption("2 Ball", auto2Ball);
+        autoChooser.addOption("Rude 2 Ball", auto2Ball);
+        autoChooser.addOption("3 Ball", auto2Ball);
     }
 
     private void configureButtonBindings() {
@@ -236,72 +264,6 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        // return null;
-        // 2 BALL AUTO ------------------------
-        
-        return new SequentialCommandGroup(
-            new RunCommand(() -> drivetrain.tankDrive(.8,.8), drivetrain).withTimeout(.5),
-            new InstantCommand(() -> {
-                // intake.setIntakeState(IntakeState.DOWN);
-                intake.setRollerPercent(0.7);
-                System.out.println("set intake");
-            }),
-            new RunCommand(() -> drivetrain.tankDrive(-.8,-.8), drivetrain).withTimeout(1.5),
-            new RunCommand(() -> {drivetrain.arcadeDrive(0,-.7); intake.setRollerPercent(0);}, drivetrain).withTimeout(1),
-            new RunCommand(() -> drivetrain.arcadeDrive(0,0), drivetrain).withTimeout(0.4),
-            new RunCommand(() -> drivetrain.tankDrive(-1,-1), drivetrain).withTimeout(1.7),
-            new InstantCommand(() -> drivetrain.tankDrive(0, 0)),
-            new PrintCommand("pid'd"),
-            new ParallelCommandGroup(
-                new RunCommand(() -> {
-                    double output = -0.7;
-                    shooter.getLimelight().setLightState(0);
-                    if (shooter.getLimelight().hasTarget()) { output = pid.calculate(shooter.getLimelight().getYawError(), 0); }
-                    drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 0.5), output));
-                }, drivetrain),
-                new RunCommand(() -> {
-                    if (shooter.getLimelight().hasTarget())
-                        shooter.setShooterFromDistance();
-                }, shooter),
-                new WaitCommand(1).andThen(new InstantCommand(()->intestines.setMagazinePercent(0.1)))
-            ).withTimeout(5),
-            new InstantCommand(() -> {
-                shooter.setShooterSpeeds(0, 0);
-                intestines.setMagazinePercent(0);
-            })
-        );
-        // 2 BALL AUTO ------------------------
-        
-        // return new SequentialCommandGroup(
-        //     new RunCommand(() -> drivetrain.tankDrive(.8,.8), drivetrain).withTimeout(.5),
-        //     new InstantCommand(() -> {
-        //         // intake.setIntakeState(IntakeState.DOWN);
-        //         intake.setRollerPercent(0.7);
-        //         System.out.println("set intake");
-        //     }),
-        //     new RunCommand(() -> drivetrain.tankDrive(-.8,-.8), drivetrain).withTimeout(1.5),
-        //     new RunCommand(() -> {drivetrain.arcadeDrive(0,-.7); intake.setRollerPercent(0);}, drivetrain).withTimeout(1),
-        //     new RunCommand(() -> drivetrain.arcadeDrive(0,0), drivetrain).withTimeout(0.4),
-        //     new RunCommand(() -> drivetrain.tankDrive(-1,-1), drivetrain).withTimeout(1.7),
-        //     new InstantCommand(() -> drivetrain.tankDrive(0, 0)),
-        //     new PrintCommand("pid'd"),
-        //     new ParallelCommandGroup(
-        //         new RunCommand(() -> {
-        //             double output = -0.7;
-        //             shooter.getLimelight().setLightState(0);
-        //             if (shooter.getLimelight().hasTarget()) { output = pid.calculate(shooter.getLimelight().getYawError(), 0); }
-        //             drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 0.5), output));
-        //         }, drivetrain),
-        //         new RunCommand(() -> {
-        //             if (shooter.getLimelight().hasTarget())
-        //                 shooter.setShooterFromDistance();
-        //         }, shooter),
-        //         new WaitCommand(1).andThen(new InstantCommand(()->intestines.setMagazinePercent(0.1)))
-        //     ).withTimeout(5),
-        //     new InstantCommand(() -> {
-        //         shooter.setShooterSpeeds(0, 0);
-        //         intestines.setMagazinePercent(0);
-        //     })
-        // );
+        return autoChooser.getSelected();
     }
 }
