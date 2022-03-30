@@ -31,9 +31,9 @@ public class Shooter extends SubsystemBase {
     private TunableNumber f = new TunableNumber("Shooter/F", ShooterConstants.F);
     
     private TunableNumberArray[] interpolatingTreemapLandmarks = { 
-        new TunableNumberArray("Shooter/DistanceLandmarks", new double[]{4, 0, -4, -8, -14, -18, -21}),
-        new TunableNumberArray("Shooter/BaseSpeedLandmarks", new double[]{1000, 1000, 1000, 1100, 1200, 1200, 1400}),
-        new TunableNumberArray("Shooter/RatioLandmarks", new double[]{0., 0.1, 0.15, 0.17, 0.25, 0.25, 0.9}),
+        new TunableNumberArray("Shooter/DistanceLandmarks", new double[]{0, -5, -10, -12, -15, -17, -20}),
+        new TunableNumberArray("Shooter/BaseSpeedLandmarks", new double[]{1150, 1100, 1150, 1150, 1200, 1250, 1500}),
+        new TunableNumberArray("Shooter/RatioLandmarks", new double[]{0.15, 0.3, 0.3, 0.2, 0.25, 0.15, 0.15}),
     };
 
     private InterpolatingTreeMap<Pair<Double, Double>> interpolatingTreemap = new InterpolatingTreeMap<>();
@@ -85,8 +85,8 @@ public class Shooter extends SubsystemBase {
     public void setShooterFromDistance(double distance) {
         var shooterSpeeds = interpolatingTreemap.interpolate(distance);
         setShooterSpeeds(
-            (shooterSpeeds.getFirst() * (1. - shooterSpeeds.getSecond())) + 40, 
-            (shooterSpeeds.getFirst() * shooterSpeeds.getSecond()) + 40
+            (shooterSpeeds.getFirst() * (1. - shooterSpeeds.getSecond())), 
+            (shooterSpeeds.getFirst() * shooterSpeeds.getSecond())
         );
         System.out.println(shooterSpeeds.getFirst() + " | " + shooterSpeeds.getSecond());
         // setShooterSpeeds(shooterSpeeds.getFirst()+50, shooterSpeeds.getSecond()+50);

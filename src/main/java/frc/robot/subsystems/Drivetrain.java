@@ -57,13 +57,12 @@ public class Drivetrain extends SubsystemBase {
         config.closedloopRamp = 0.1;
         config.openloopRamp = 0;
         config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
-        
+
         // Reset all the drivetrain controllers
         frontLeft.configFactoryDefault();
         frontLeft.setNeutralMode(NeutralMode.Brake);
         frontLeft.setInverted(InvertType.InvertMotorOutput);
         frontLeft.configAllSettings(config);
-        // fr
 
         backLeft.configFactoryDefault();
         backLeft.follow(frontLeft);
@@ -84,7 +83,7 @@ public class Drivetrain extends SubsystemBase {
 
         SmartDashboard.putData("Field", field);
     }
-    
+    public void resetGyro() { gyro.reset(); }
     @Override
     public void periodic() {
         if (turnP.hasChanged() | turnD.hasChanged()) {

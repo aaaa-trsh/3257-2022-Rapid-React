@@ -8,7 +8,7 @@ import edu.wpi.first.math.util.Units;
 import frc.robot.utils.GeomUtil;
 
 public final class Constants {
-    public static boolean tuning = true; 
+    public static boolean tuning = false; 
     public static boolean debugControl = false; 
     public static int timeout = 30; 
     public static class DriveConstants { 

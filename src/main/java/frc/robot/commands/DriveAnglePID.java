@@ -5,13 +5,12 @@ import edu.wpi.first.wpilibj2.command.PIDCommand;
 import frc.robot.subsystems.Drivetrain;
 
 public class DriveAnglePID extends PIDCommand {
-    private PIDController controller;
     public DriveAnglePID(double degrees, PIDController controller, Drivetrain drivetrain) {
         super(
             controller,
             drivetrain::getHeading,
             degrees,
-            (output) -> drivetrain.arcadeDrive(0, output),
+            (output) -> drivetrain.arcadeDrive(0, Math.copySign(Math.min(Math.abs(output), 0.5), output)),
             drivetrain
         );
     }
