@@ -216,7 +216,7 @@ public class RobotContainer {
                 new RunCommand(() -> {
                     double output = -driverController.getRightStickXValue();
                     if (shooter.getLimelight().hasTarget()) { output = visionPID.calculate(shooter.getLimelight().getYawError(), 0); } // Math.toDegrees(Math.atan((Math.exp(0.052f)*shooter.getLimelight().getPitchError())/7))
-                    drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 0.7), output));
+                    drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 1), output));
                 }, drivetrain).withTimeout(2)
             ).whenInactive(() -> drivetrain.tankDrive(0, 0));        
     }
