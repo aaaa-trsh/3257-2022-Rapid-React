@@ -116,7 +116,6 @@ public class RobotContainer {
         );
         // Command autoRude2Ball = new SequentialCommandGroup();
         Command auto3Ball = new SequentialCommandGroup(
-            
             new RunCommand(() -> drivetrain.tankDrive(.9,.9), drivetrain).withTimeout(.2),
             new InstantCommand(() -> drivetrain.tankDrive(0, 0), intake),
             new WaitCommand(.6),
@@ -140,7 +139,7 @@ public class RobotContainer {
                 shooter.setShooterSpeeds(0, 0);
                 intestines.setMagazinePercent(0);
             }),
-            new DriveAnglePID(-127, new PIDController(0.05, 0.05, 0), drivetrain).withTimeout(1),
+            new DriveAnglePID(drivetrain.getHeading() + 53, new PIDController(0.05, 0.05, 0), drivetrain).withTimeout(1),
             new RunCommand(() -> drivetrain.tankDrive(-.7,-.7), drivetrain).withTimeout(2),
             new ParallelCommandGroup(
                 new RunCommand(() -> {
@@ -163,8 +162,8 @@ public class RobotContainer {
         
         autoChooser.addOption("1 Ball", auto1Ball);
         autoChooser.addOption("2 Ball", auto2Ball);
-        // autoChooser.addOption("Rude 2 Ball", auto2Ball);
         autoChooser.addOption("3 Ball", auto3Ball);
+        // autoChooser.addOption("Rude 2 Ball", auto2Ball);
     }
 
     private void configureButtonBindings() {
