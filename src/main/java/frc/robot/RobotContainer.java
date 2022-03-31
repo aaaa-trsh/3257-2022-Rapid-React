@@ -136,11 +136,15 @@ public class RobotContainer {
                 new WaitCommand(2).andThen(new InstantCommand(()->intestines.setMagazinePercent(0.1)))
             ).withTimeout(5),
             new InstantCommand(() -> {
+                shooter.getLimelight().setLightState(1);
                 shooter.setShooterSpeeds(0, 0);
                 intestines.setMagazinePercent(0);
             }),
             new DriveAnglePID(drivetrain.getHeading() + 53, new PIDController(0.05, 0.05, 0), drivetrain).withTimeout(1),
+            new InstantCommand(() -> intake.setRollerPercent(-1), intake),
             new RunCommand(() -> drivetrain.tankDrive(-.7,-.7), drivetrain).withTimeout(2),
+            new InstantCommand(() -> intake.setRollerPercent(0), intake),
+            new RunCommand(() -> drivetrain.tankDrive(1,1), drivetrain).withTimeout(0.3),
             new ParallelCommandGroup(
                 new RunCommand(() -> {
                     double output = 1;
@@ -153,8 +157,9 @@ public class RobotContainer {
                         shooter.setShooterFromDistance();
                 }, shooter),
                 new WaitCommand(2).andThen(new InstantCommand(()->intestines.setMagazinePercent(0.1)))
-            ).withTimeout(3),
+            ).withTimeout(5),
             new InstantCommand(() -> {
+                shooter.getLimelight().setLightState(1);
                 shooter.setShooterSpeeds(0, 0);
                 intestines.setMagazinePercent(0);
             })
@@ -165,7 +170,16 @@ public class RobotContainer {
         autoChooser.addOption("3 Ball", auto3Ball);
         // autoChooser.addOption("Rude 2 Ball", auto2Ball);
     }
+    public void reset() {
+        shooter.getLimelight().setLightState(1);
+        shooter.setShooterSpeeds(0, 0);
+        intestines.setMagazinePercent(0);
+        drivetrain.tankDrive(0, 0);
+        intake.setRollerPercent(0);
+    }
 
+    boolean flywheelUsingLimelight = false;
+    boolean aimUsingLimelight = false;
     private void configureButtonBindings() {
         // OPERATOR ------------------------------------------
         operatorController.rightBumper
@@ -177,8 +191,16 @@ public class RobotContainer {
             .whenInactive(() -> intestines.setMagazinePercent(0), intestines);
         
         operatorController.rightTriggerButton
-            .whileHeld(new InstantCommand(() -> { if (shooter.getLimelight().hasTarget()) { shooter.setShooterFromDistance(); }}, shooter))
-            .whenInactive(() -> shooter.setShooterSpeeds(0, 0));
+            .whileHeld(new InstantCommand(() -> {
+                if (shooter.getLimelight().hasTarget()) { shooter.setShooterFromDistance(); }
+                flywheelUsingLimelight = true;
+                shooter.getLimelight().setLightState(0);
+            }, shooter))
+            .whenInactive(() -> {
+                shooter.setShooterSpeeds(0, 0);
+                flywheelUsingLimelight = false;
+                if (!aimUsingLimelight) shooter.getLimelight().setLightState(1);
+            });
             
         operatorController.selectButton
             .whileHeld(new InstantCommand(() -> shooter.setShooterFromDistance(-4), shooter))
@@ -198,10 +220,10 @@ public class RobotContainer {
         operatorController.aButton.whenActive(() -> climber.setArm1(-1), climber).whenInactive(() -> climber.setArm1(0), climber);
         operatorController.xButton.whenActive(() -> climber.setArm2( 1), climber).whenInactive(() -> climber.setArm2(0), climber);
         operatorController.bButton.whenActive(() -> climber.setArm2(-1), climber).whenInactive(() -> climber.setArm2(0), climber);
-        operatorController.Dpad.Up  .whenActive(() -> {shooterPwr += 50; System.out.println("shooter speed++ | now:" + shooterPwr);});
-        operatorController.Dpad.Down.whenActive(() -> {shooterPwr -= 50; System.out.println("shooter speed-- | now:" + shooterPwr);});
-        operatorController.Dpad.Left .whenActive(() -> {shooterRatio += 0.05; System.out.println("shooter ratio++ | now:" + shooterRatio);});
-        operatorController.Dpad.Right.whenActive(() -> {shooterRatio -= 0.05; System.out.println("shooter ratio-- | now:" + shooterRatio);});
+        // operatorController.Dpad.Up  .whenActive(() -> {shooterPwr += 50; System.out.println("shooter speed++ | now:" + shooterPwr);});
+        // operatorController.Dpad.Down.whenActive(() -> {shooterPwr -= 50; System.out.println("shooter speed-- | now:" + shooterPwr);});
+        // operatorController.Dpad.Left .whenActive(() -> {shooterRatio += 0.05; System.out.println("shooter ratio++ | now:" + shooterRatio);});
+        // operatorController.Dpad.Right.whenActive(() -> {shooterRatio -= 0.05; System.out.println("shooter ratio-- | now:" + shooterRatio);});
 
 
         // DRIVER ------------------------------------------
@@ -215,10 +237,16 @@ public class RobotContainer {
             .whenActive(
                 new RunCommand(() -> {
                     double output = -driverController.getRightStickXValue();
+                    shooter.getLimelight().setLightState(0);
+                    aimUsingLimelight = true;
                     if (shooter.getLimelight().hasTarget()) { output = visionPID.calculate(shooter.getLimelight().getYawError(), 0); } // Math.toDegrees(Math.atan((Math.exp(0.052f)*shooter.getLimelight().getPitchError())/7))
                     drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 1), output));
                 }, drivetrain).withTimeout(2)
-            ).whenInactive(() -> drivetrain.tankDrive(0, 0));        
+            ).whenInactive(() -> { 
+                drivetrain.tankDrive(0, 0);
+                aimUsingLimelight = false;
+                if (!flywheelUsingLimelight) shooter.getLimelight().setLightState(1);
+            });        
     }
 
     private void configureDebugButtonBindings() {
