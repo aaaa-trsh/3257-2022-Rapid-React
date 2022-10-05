@@ -30,48 +30,29 @@ public class Intake extends SubsystemBase {
     // private TunableNumber p = new TunableNumber("Intake/P", 0.6);
     // private TunableNumber d = new TunableNumber("Intake/D", 0.);
 
-    private IntakeState intakeState = IntakeState.DOWN;
+    private IntakeState intakeState = IntakeState.UP;
 
     public Intake() {
         // targetPos = upPos.get();
         liftMotor.restoreFactoryDefaults();
         liftEncoder = liftMotor.getEncoder();
-        liftEncoder.setPosition(0);
+        liftEncoder.setPosition(0.7);
         liftController = liftMotor.getPIDController();
 
-        liftController.setP(1);
+        liftController.setP(0.8);
         liftController.setI(0);
-        liftController.setD(0);
+        liftController.setD(0.2);
         liftController.setIZone(0);
-        liftController.setFF(0);
-        liftController.setOutputRange(-.1, .3);
+        liftController.setFF(0.15);
+        liftController.setOutputRange(-1, .3);
     }
 
     // public void resetLiftEncoder() { liftEncoder.setPosition(0); }
     
     @Override
     public void periodic() {
-        // if (p.hasChanged() | d.hasChanged()) {
-        //     liftController.setP(p.get());
-        //     liftController.setD(d.get());
-        // }
-        
-        // switch (intakeState) {
-        //     case UP:
-        //         targetPos = upPos.get();
-        //         break;
-        //     case MID:
-        //         targetPos = midPos.get();
-        //         break;
-        //     case DOWN:
-        //         targetPos = downPos.get();
-        //         break;
-        //     default:
-        //         targetPos = 0;
-        //         break;
-        //     }
         if (intakeState == IntakeState.UP) {
-            liftController.setReference(7.5, CANSparkMax.ControlType.kPosition);
+            liftController.setReference(.7, CANSparkMax.ControlType.kPosition);
         } else {
             liftController.setReference(0, CANSparkMax.ControlType.kPosition);
         }
@@ -83,8 +64,8 @@ public class Intake extends SubsystemBase {
     public void setIntakePercent(double percent) { liftMotor.set(-percent); }
     
     public void setIntakeState(IntakeState intakeState) {
+        System.out.println("INTAKE: "+intakeState);
         this.intakeState = intakeState;
-        // liftController.setReference(0, CANSparkMax.ControlType.kDutyCycle);
     }
     
     public static enum IntakeState {

@@ -9,7 +9,6 @@ import frc.robot.utils.GeomUtil;
 
 public final class Constants {
     public static boolean tuning = false; 
-    public static boolean debugControl = false; 
     public static int timeout = 30; 
     public static class DriveConstants { 
         /* Drive Ports */
@@ -51,7 +50,7 @@ public final class Constants {
 
     public static class ShooterConstants {
         /* Motor Ports */
-        public static int upperFlywheelPort = 8;
+        public static int upperFlywheelPort = 0;
         public static int lowerFlywheelPort = 6;
         
         // rotations of motor/rotations of flywheel <- higher if geared down!
@@ -84,12 +83,11 @@ public final class Constants {
     public static class IntestineConstants {
         public static int magazinePort = 11;
         public static int magazineSwitchPort = 0;
-        
     }
 
     public static class IntakeConstants {
         public static int rollerPort = 2;
-        public static int liftPort = 10;
+        public static int liftPort = 5;
     }
     /**
      * YOINKED FROM 6238 MECHANICAL ADVANTAGE

@@ -1,5 +1,7 @@
 package frc.robot.subsystems;
 
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.TalonFXControlMode;
@@ -19,8 +21,10 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.MotorController;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.utils.Limelight;
 import frc.robot.utils.Conversions.TalonFXConversions;
 import frc.robot.utils.tunables.TunableNumber;
 
@@ -38,8 +42,10 @@ public class Drivetrain extends SubsystemBase {
 
     private TunableNumber turnP = new TunableNumber("Drive/TurnP", 0.1);
     private TunableNumber turnD = new TunableNumber("Drive/TurnD", 0.);
+    private PIDController turnController = new PIDController(0.03, 0.06, 0);
 
-    private PIDController turnController = new PIDController(1000, 0, 0);
+    private PIDController visionPIDController = new PIDController(0.03, 0.06, 0);
+
     // private PIDController leftController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
     // private PIDController rightController = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
 
@@ -124,6 +130,24 @@ public class Drivetrain extends SubsystemBase {
         gyro.reset();
     }
 
+    public RunCommand aimWithVisionCommand(
+        Limelight shooterLimelight, 
+        DoubleSupplier manualTurnSupplier, 
+        DoubleSupplier manualThrottleSupplier
+    ) {
+        return new RunCommand(() -> {
+            // allow normal turn until target acquired
+            double turn = manualTurnSupplier.getAsDouble();
+            if (shooterLimelight.hasTarget()) { // set turn output
+                turn = visionPIDController.calculate(shooterLimelight.getYawError(), 0);
+            }
+            arcadeDrive(
+                manualThrottleSupplier.getAsDouble(), // allow normal throttle
+                Math.max(Math.min(turn, 1), -1) // clamp turn output -1 to 1
+            );
+        }, this);
+    }
+    
     /* CONVERSIONS */
     public static double nativePositionToMeters(double nativeUnits) { 
         // Helper function to convert native units (encoder counts) to meters for odometry

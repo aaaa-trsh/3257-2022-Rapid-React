@@ -18,6 +18,8 @@ import frc.robot.utils.interpolables.Interpolable.InterpolatingTreeMap;
 import frc.robot.utils.interpolables.TupleInterpolable;
 import frc.robot.utils.tunables.TunableNumber;
 import frc.robot.utils.tunables.TunableNumberArray;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 
 public class Shooter extends SubsystemBase {
     private WPI_TalonFX lowerFlywheel = new WPI_TalonFX(ShooterConstants.lowerFlywheelPort);
@@ -30,37 +32,25 @@ public class Shooter extends SubsystemBase {
     private TunableNumber d = new TunableNumber("Shooter/D", ShooterConstants.D);
     private TunableNumber f = new TunableNumber("Shooter/F", ShooterConstants.F);
     
-    private TunableNumberArray[] interpolatingTreemapLandmarks = { 
-        new TunableNumberArray("Shooter/DistanceLandmarks", new double[]{0, -5, -10, -12, -15, -17, -20}),
-        new TunableNumberArray("Shooter/BaseSpeedLandmarks", new double[]{1150, 1100, 1150, 1150, 1200, 1250, 1500}),
-        new TunableNumberArray("Shooter/RatioLandmarks", new double[]{0.15, 0.3, 0.3, 0.2, 0.25, 0.15, 0.15}),
-    };
+    private TunableNumberArray distanceLandmarks = new TunableNumberArray("Shooter/DistanceLandmarks", new double[]{0, -5, -10, -12, -15, -17, -20});
+    private TunableNumberArray baseSpeedLandmarks = new TunableNumberArray("Shooter/BaseSpeedLandmarks", new double[]{1150, 1100, 1150, 1150, 1200, 1250, 1500});
+    private TunableNumberArray ratioLandmarks = new TunableNumberArray("Shooter/RatioLandmarks", new double[]{0.15, 0.3, 0.3, 0.2, 0.25, 0.15, 0.15});
+
+    private TunableNumber shooterFineOffset = new TunableNumber("Shooter/DistanceOffset", 0.);
 
     private InterpolatingTreeMap<Pair<Double, Double>> interpolatingTreemap = new InterpolatingTreeMap<>();
     
     private double lowerRPM, upperRPM;
 
     public Shooter() {
-        var interpolatingTreemap = new InterpolatingTreeMap<Pair<Double, Double>>();
-        double[] dist = interpolatingTreemapLandmarks[0].get();
-        double[] low = interpolatingTreemapLandmarks[1].get();
-        double[] up = interpolatingTreemapLandmarks[2].get();
+        updateTreeMap();
+        setLightState(false);
 
-        for (int i = 0; i < dist.length; i++) {
-            interpolatingTreemap.put(dist[i], new TupleInterpolable(low[i], up[i]));
-        }
-        this.interpolatingTreemap = interpolatingTreemap;
-
-        limelight.setLightState(0);
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.nominalOutputForward = 0;
         config.nominalOutputReverse = 0;
         config.peakOutputForward = 1;
         config.peakOutputReverse = -1;
-        config.slot0.kP = p.get();
-        config.slot0.kI = i.get();
-        config.slot0.kD = d.get();
-        config.slot0.kF = f.get();
         config.closedloopRamp = 0.7;
         config.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice();
 
@@ -75,6 +65,42 @@ public class Shooter extends SubsystemBase {
         upperFlywheel.setInverted(InvertType.None);
         upperFlywheel.setNeutralMode(NeutralMode.Coast);
         upperFlywheel.configAllSettings(config);
+
+        updateFlywheelPIDs();
+    }
+
+    private void updateTreeMap() {
+        var interpolatingTreemap = new InterpolatingTreeMap<Pair<Double, Double>>();
+        double[] dist = distanceLandmarks.get();
+        double[] baseSpeeds = baseSpeedLandmarks.get();
+        double[] ratios = ratioLandmarks.get();
+
+        for (int i = 0; i < dist.length; i++) {
+            interpolatingTreemap.put(dist[i], new TupleInterpolable(baseSpeeds[i], ratios[i]));
+        }
+        this.interpolatingTreemap = interpolatingTreemap;
+        
+        System.out.println(
+            distanceLandmarks.hasChanged() + " " + 
+            baseSpeedLandmarks.hasChanged() + " " + 
+            ratioLandmarks.hasChanged() + " "
+        );
+    }
+
+    private void updateFlywheelPIDs() {
+        lowerFlywheel.config_kP(0, p.get(), Constants.timeout);
+        lowerFlywheel.config_kI(0, i.get(), Constants.timeout);
+        lowerFlywheel.config_kD(0, d.get(), Constants.timeout);
+        lowerFlywheel.config_kF(0, f.get(), Constants.timeout);
+
+        upperFlywheel.config_kP(0, p.get(), Constants.timeout);
+        upperFlywheel.config_kI(0, i.get(), Constants.timeout);
+        upperFlywheel.config_kD(0, d.get(), Constants.timeout);
+        upperFlywheel.config_kF(0, f.get(), Constants.timeout);
+    }
+
+    public void setLightState(boolean on) {
+        limelight.setLightState(on ? 3 : 1);
     }
     
     public void setShooterSpeeds(double lowerRPM, double upperRPM) {
@@ -83,13 +109,12 @@ public class Shooter extends SubsystemBase {
     }
 
     public void setShooterFromDistance(double distance) {
-        var shooterSpeeds = interpolatingTreemap.interpolate(distance);
+        var shooterSpeeds = interpolatingTreemap.interpolate(distance + shooterFineOffset.get());
         setShooterSpeeds(
             (shooterSpeeds.getFirst() * (1. - shooterSpeeds.getSecond())), 
             (shooterSpeeds.getFirst() * shooterSpeeds.getSecond())
         );
         System.out.println(shooterSpeeds.getFirst() + " | " + shooterSpeeds.getSecond());
-        // setShooterSpeeds(shooterSpeeds.getFirst()+50, shooterSpeeds.getSecond()+50);
     }
 
     public void setShooterFromDistance() { setShooterFromDistance(getLimelight().getPitchError()); }
@@ -99,38 +124,11 @@ public class Shooter extends SubsystemBase {
     @Override
     public void periodic() {
         if (p.hasChanged() | i.hasChanged() | d.hasChanged() | f.hasChanged()) {
-            lowerFlywheel.config_kP(0, p.get(), Constants.timeout);
-            lowerFlywheel.config_kI(0, i.get(), Constants.timeout);
-            lowerFlywheel.config_kD(0, d.get(), Constants.timeout);
-            lowerFlywheel.config_kF(0, f.get(), Constants.timeout);
-
-            upperFlywheel.config_kP(0, p.get(), Constants.timeout);
-            upperFlywheel.config_kI(0, i.get(), Constants.timeout);
-            upperFlywheel.config_kD(0, d.get(), Constants.timeout);
-            upperFlywheel.config_kF(0, f.get(), Constants.timeout);
-            // System.out.println(
-            //     " P: " + p.get() + 
-            //     " I: " + i.get() + 
-            //     " D: " + d.get() + 
-            //     " F: " + f.get()
-            // );
+            updateFlywheelPIDs();
         }
 
-        if (interpolatingTreemapLandmarks[0].hasChanged() | interpolatingTreemapLandmarks[1].hasChanged() | interpolatingTreemapLandmarks[2].hasChanged()) {
-            var interpolatingTreemap = new InterpolatingTreeMap<Pair<Double, Double>>();
-            double[] dist = interpolatingTreemapLandmarks[0].get();
-            double[] baseSpeeds = interpolatingTreemapLandmarks[1].get();
-            double[] ratios = interpolatingTreemapLandmarks[2].get();
-
-            for (int i = 0; i < dist.length; i++) {
-                interpolatingTreemap.put(dist[i], new TupleInterpolable(baseSpeeds[i], ratios[i]));
-            }
-            this.interpolatingTreemap = interpolatingTreemap;
-            System.out.println(
-                interpolatingTreemapLandmarks[0].hasChanged() + " " + 
-                interpolatingTreemapLandmarks[1].hasChanged() + " " + 
-                interpolatingTreemapLandmarks[2].hasChanged() + " "
-            );
+        if (distanceLandmarks.hasChanged() | baseSpeedLandmarks.hasChanged() | ratioLandmarks.hasChanged()) {
+            updateTreeMap();
         }
         
         if (lowerRPM > 0 | upperRPM > 0) {
@@ -152,4 +150,20 @@ public class Shooter extends SubsystemBase {
     }
 
     public Limelight getLimelight() { return limelight; }
+
+    public Command spinUpWithVisionCommand() {
+        return new InstantCommand(() -> {
+            if (getLimelight().hasTarget()) { setShooterFromDistance(); }
+            else { setShooterFromDistance(-4); }
+        }, this);
+    }
+    public Command spinUpForTuningCommand() {
+        return new InstantCommand(() -> {
+            if (getLimelight().hasTarget()) { setShooterFromDistance(); }
+            else { setShooterFromDistance(-4); }
+        }, this);
+    }
+    public Runnable spinUpOverrideCommand() { return () -> setShooterFromDistance(-4); }
+    public Runnable spinDownCommand() { return () -> setShooterSpeeds(0, 0); }
+
 }

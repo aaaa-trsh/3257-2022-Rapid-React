@@ -1,11 +1,9 @@
 package frc.robot;
 
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -17,10 +15,7 @@ import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Intestines;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Intake.IntakeState;
-import frc.robot.utils.control.AxisButton;
-import frc.robot.utils.control.AxisButton.ThresholdType;
 import frc.robot.utils.control.XboxJoystick;
-import frc.robot.utils.control.XboxJoystick.XboxAxis;
 
 public class RobotContainer {
     private final Drivetrain drivetrain  = new Drivetrain();
@@ -31,247 +26,212 @@ public class RobotContainer {
     
     private final XboxJoystick driverController = new XboxJoystick(IOConstants.driverControllerPort);
     private final XboxJoystick operatorController = new XboxJoystick(IOConstants.operatorControllerPort);
-
-    private double shooterPwr = 1200;
-    private double shooterRatio = 0;
     
     private SendableChooser<Command> autoChooser = new SendableChooser<>();
-    private PIDController visionPID = new PIDController(0.03, 0.06, 0);
+
+    private static enum ControlMode {
+		CO_OP, SOLO;
+	}
+    private ControlMode controlMode = ControlMode.SOLO;
 
     public RobotContainer() {
         configureAutonomousChooser();
-        if (Constants.debugControl) {
-            drivetrain.setDefaultCommand(
-                new RunCommand(
-                    () -> drivetrain.arcadeDrive(
-                        driverController.getLeftStickYValue(),
-                        driverController.getLeftStickXValue() * .7
-                    ),
-                    drivetrain
-                )
-            );
-            configureDebugButtonBindings();
-        } else {
-            drivetrain.setDefaultCommand(
-                new RunCommand(
-                    () -> drivetrain.arcadeDrive(
-                        driverController.getLeftStickYValue(),
-                        driverController.getRightStickXValue() * .7
-                    ),
-                    drivetrain
-                )
-            ); 
+
+        // drive command by default;
+        drivetrain.setDefaultCommand(
+            new RunCommand(
+                () -> drivetrain.arcadeDrive(
+                    driverController.getLeftStickYValue(),
+                    driverController.getRightStickXValue() * .7
+                ),
+                drivetrain
+            )
+        );
+        
+        // intake mgmt by default
+        intestines.setDefaultCommand(
+            new RunCommand(() -> {
+                // manual overrides
+                if (
+                    (controlMode == ControlMode.SOLO && driverController.leftBumper.get()) ||
+                    operatorController.rightBumper.get())
+                { // intake
+                    intestines.setMagazinePercent(0.2);
+                } else if (
+                    (controlMode == ControlMode.CO_OP ? driverController.leftTriggerButton.get() : driverController.selectButton.get()) || // TODO: remove driver control when intake lift works!
+                    operatorController.leftTriggerButton.get()) 
+                {// eject
+                    intestines.setMagazinePercent(-0.3);
+                } else {
+                    // auto mag
+                    if (intestines.isBallInQueue()) {
+                        intestines.setMagazinePercent(0.2);
+                    } else { // reset by default
+                        intestines.setMagazinePercent(0);
+                    }
+                }
+            }, intestines)
+        );
+
+        if (controlMode == ControlMode.SOLO) {
+            configureSoloButtonBindings();
+        } else if (controlMode == ControlMode.CO_OP) {
+            configureCoOpButtonBindings();
         }
-        SmartDashboard.putData("auto choser",autoChooser);
-        configureButtonBindings();
+
+        SmartDashboard.putData("auto choser", autoChooser);
     }
     public void autoInit() {
         drivetrain.resetGyro();
     }
     private void configureAutonomousChooser() {
         Command auto1Ball = new SequentialCommandGroup(
+            shooter.spinUpWithVisionCommand(),
             new RunCommand(() -> drivetrain.tankDrive(.9,.9), drivetrain).withTimeout(.8),
-            new ParallelCommandGroup(
-                new RunCommand(() -> {
-                    double output = 0.3;
-                    shooter.getLimelight().setLightState(0);
-                    if (shooter.getLimelight().hasTarget()) { output = visionPID.calculate(shooter.getLimelight().getYawError(), 0); }
-                    drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 0.5), output));
-                }, drivetrain),
-                new RunCommand(() -> {
-                    if (shooter.getLimelight().hasTarget())
-                        shooter.setShooterFromDistance();
-                }, shooter),
-                new WaitCommand(1).andThen(new InstantCommand(()->intestines.setMagazinePercent(0.1)))
-            ).withTimeout(10),
+            drivetrain.aimWithVisionCommand(shooter.getLimelight(), () -> 0.3, () -> 0).withTimeout(1),
+            new InstantCommand(()->intestines.setMagazinePercent(0.1)),
+            new WaitCommand(10),
             new InstantCommand(() -> {
                 shooter.setShooterSpeeds(0, 0);
                 intestines.setMagazinePercent(0);
             })
         );
         Command auto2Ball = new SequentialCommandGroup(
+            // drop intake
             new RunCommand(() -> drivetrain.tankDrive(.9,.9), drivetrain).withTimeout(.2),
-            new InstantCommand(() -> drivetrain.tankDrive(0, 0), intake),
-            new WaitCommand(0.6),
-            new InstantCommand(() -> intake.setRollerPercent(-1), intake),
+            new InstantCommand(() -> drivetrain.tankDrive(0, 0), drivetrain),
+            // TODO: replace with intake down command w/ motor
+            new WaitCommand(0.3),
+            shooter.spinUpWithVisionCommand(),
+            new WaitCommand(0.3),
+            new InstantCommand(() -> intake.setRollerPercent(1), intake),
             new RunCommand(() -> drivetrain.tankDrive(-.7,-.7), drivetrain).withTimeout(1.6),
             new InstantCommand(() -> intake.setRollerPercent(0), intake),
-            new ParallelCommandGroup(
-                new RunCommand(() -> {
-                    double output = 1;
-                    shooter.getLimelight().setLightState(0);
-                    if (shooter.getLimelight().hasTarget()) { output = visionPID.calculate(shooter.getLimelight().getYawError(), 0); }
-                    drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 0.7), output));
-                }, drivetrain),
-                new RunCommand(() -> {
-                    if (shooter.getLimelight().hasTarget())
-                        shooter.setShooterFromDistance();
-                }, shooter),
-                new WaitCommand(2).andThen(new InstantCommand(()->intestines.setMagazinePercent(0.1)))
-            ).withTimeout(10),
+            drivetrain.aimWithVisionCommand(shooter.getLimelight(), () -> 1, () -> 0).withTimeout(2), // TODO: replace aimWithVision timeout with isFinished flag
+            new InstantCommand(()->intestines.setMagazinePercent(0.1)),
+            new WaitCommand(4),
             new InstantCommand(() -> {
                 shooter.setShooterSpeeds(0, 0);
                 intestines.setMagazinePercent(0);
             })
         );
-        // Command autoRude2Ball = new SequentialCommandGroup();
+
         Command auto3Ball = new SequentialCommandGroup(
-            new RunCommand(() -> drivetrain.tankDrive(.9,.9), drivetrain).withTimeout(.2),
-            new InstantCommand(() -> drivetrain.tankDrive(0, 0), intake),
-            new WaitCommand(.6),
-            new InstantCommand(() -> intake.setRollerPercent(-1), intake),
-            new RunCommand(() -> drivetrain.tankDrive(-.7,-.7), drivetrain).withTimeout(1.6),
-            new InstantCommand(() -> intake.setRollerPercent(0), intake),
-            new ParallelCommandGroup(
-                new RunCommand(() -> {
-                    double output = 1;
-                    shooter.getLimelight().setLightState(0);
-                    if (shooter.getLimelight().hasTarget()) { output = visionPID.calculate(shooter.getLimelight().getYawError(), 0); }
-                    drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 0.7), output));
-                }, drivetrain),
-                new RunCommand(() -> {
-                    if (shooter.getLimelight().hasTarget())
-                        shooter.setShooterFromDistance();
-                }, shooter),
-                new WaitCommand(2).andThen(new InstantCommand(()->intestines.setMagazinePercent(0.1)))
-            ).withTimeout(5),
-            new InstantCommand(() -> {
-                shooter.getLimelight().setLightState(1);
-                shooter.setShooterSpeeds(0, 0);
-                intestines.setMagazinePercent(0);
-            }),
-            new DriveAnglePID(drivetrain.getHeading() + 53, new PIDController(0.05, 0.05, 0), drivetrain).withTimeout(1),
-            new InstantCommand(() -> intake.setRollerPercent(-1), intake),
+            auto2Ball,
+            shooter.spinUpWithVisionCommand(),
+            new DriveAnglePID(drivetrain.getHeading() + 53, drivetrain.getTurnController(), drivetrain).withTimeout(1),
+            new InstantCommand(() -> intake.setRollerPercent(1), intake),
             new RunCommand(() -> drivetrain.tankDrive(-.7,-.7), drivetrain).withTimeout(2),
             new InstantCommand(() -> intake.setRollerPercent(0), intake),
             new RunCommand(() -> drivetrain.tankDrive(1,1), drivetrain).withTimeout(0.3),
-            new ParallelCommandGroup(
-                new RunCommand(() -> {
-                    double output = 1;
-                    shooter.getLimelight().setLightState(0);
-                    if (shooter.getLimelight().hasTarget()) { output = visionPID.calculate(shooter.getLimelight().getYawError(), 0); }
-                    drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 0.7), output));
-                }, drivetrain),
-                new RunCommand(() -> {
-                    if (shooter.getLimelight().hasTarget())
-                        shooter.setShooterFromDistance();
-                }, shooter),
-                new WaitCommand(2).andThen(new InstantCommand(()->intestines.setMagazinePercent(0.1)))
-            ).withTimeout(5),
+            drivetrain.aimWithVisionCommand(shooter.getLimelight(), () -> 1, () -> 0).withTimeout(2),
+            new InstantCommand(() -> intestines.setMagazinePercent(0.1)),
+            new WaitCommand(4),
             new InstantCommand(() -> {
-                shooter.getLimelight().setLightState(1);
                 shooter.setShooterSpeeds(0, 0);
                 intestines.setMagazinePercent(0);
             })
         );
-        
         autoChooser.addOption("1 Ball", auto1Ball);
         autoChooser.addOption("2 Ball", auto2Ball);
         autoChooser.addOption("3 Ball", auto3Ball);
-        // autoChooser.addOption("Rude 2 Ball", auto2Ball);
     }
+    
     public void reset() {
-        shooter.getLimelight().setLightState(1);
+        shooter.setLightState(false);
         shooter.setShooterSpeeds(0, 0);
         intestines.setMagazinePercent(0);
         drivetrain.tankDrive(0, 0);
         intake.setRollerPercent(0);
     }
 
-    boolean flywheelUsingLimelight = false;
-    boolean aimUsingLimelight = false;
-    private void configureButtonBindings() {
+    private void configureCoOpButtonBindings() {
         // OPERATOR ------------------------------------------
-        operatorController.rightBumper
-            .whenActive(() -> intestines.setMagazinePercent(0.2), intestines)
-            .whenInactive(() -> intestines.setMagazinePercent(0), intestines);
-
-        operatorController.leftBumper
-            .whenActive(() -> intestines.setMagazinePercent(-0.5), intestines)
-            .whenInactive(() -> intestines.setMagazinePercent(0), intestines);
-        
-        operatorController.rightTriggerButton
-            .whileHeld(new InstantCommand(() -> {
-                if (shooter.getLimelight().hasTarget()) { shooter.setShooterFromDistance(); }
-                flywheelUsingLimelight = true;
-                shooter.getLimelight().setLightState(0);
-            }, shooter))
-            .whenInactive(() -> {
-                shooter.setShooterSpeeds(0, 0);
-                flywheelUsingLimelight = false;
-                if (!aimUsingLimelight) shooter.getLimelight().setLightState(1);
-            });
+        // operator eject command is set by default (left trigger)
+        operatorController.rightTriggerButton // main shoot
+            .whileHeld(shooter.spinUpWithVisionCommand())
+            .whenInactive(shooter.spinDownCommand());
             
-        operatorController.selectButton
-            .whileHeld(new InstantCommand(() -> shooter.setShooterFromDistance(-4), shooter))
-            .whenInactive(() -> shooter.setShooterSpeeds(0, 0));
+        operatorController.selectButton // manual override
+            .whileHeld(shooter.spinUpOverrideCommand())
+            .whenInactive(shooter.spinDownCommand());
 
-        operatorController.startButton
-            .whileHeld(() -> shooter.setShooterSpeeds(
-                shooterPwr * (1. - shooterRatio), shooterPwr * shooterRatio), shooter)
-            .whenInactive(() -> shooter.setShooterSpeeds(0, 0));
-        
-        new AxisButton(operatorController, XboxAxis.LEFT_Y, -0.5, ThresholdType.LESS_THAN)
-            .whenActive(() -> intake.setIntakeState(IntakeState.UP));
-        new AxisButton(operatorController, XboxAxis.LEFT_Y, 0.5, ThresholdType.GREATER_THAN)
-            .whenActive(() -> intake.setIntakeState(IntakeState.DOWN));
-
+        // climber shit
         operatorController.yButton.whenActive(() -> climber.setArm1( 1), climber).whenInactive(() -> climber.setArm1(0), climber);
         operatorController.aButton.whenActive(() -> climber.setArm1(-1), climber).whenInactive(() -> climber.setArm1(0), climber);
         operatorController.xButton.whenActive(() -> climber.setArm2( 1), climber).whenInactive(() -> climber.setArm2(0), climber);
         operatorController.bButton.whenActive(() -> climber.setArm2(-1), climber).whenInactive(() -> climber.setArm2(0), climber);
-        // operatorController.Dpad.Up  .whenActive(() -> {shooterPwr += 50; System.out.println("shooter speed++ | now:" + shooterPwr);});
-        // operatorController.Dpad.Down.whenActive(() -> {shooterPwr -= 50; System.out.println("shooter speed-- | now:" + shooterPwr);});
-        // operatorController.Dpad.Left .whenActive(() -> {shooterRatio += 0.05; System.out.println("shooter ratio++ | now:" + shooterRatio);});
-        // operatorController.Dpad.Right.whenActive(() -> {shooterRatio -= 0.05; System.out.println("shooter ratio-- | now:" + shooterRatio);});
-
 
         // DRIVER ------------------------------------------
+        // driver drive command is set by default (right/left joysticks)
+        // driver mag command is set by default (left bumper)
+        // driver eject command is set by default (start)
         driverController.rightTriggerButton
-            .whenActive(() -> intake.setRollerPercent(-1), intestines)
-            .whenInactive(() -> intake.setRollerPercent(0), intestines);
-        driverController.leftTriggerButton
-            .whenActive(() -> intake.setRollerPercent(0.3), intestines)
-            .whenInactive(() -> intake.setRollerPercent(0), intestines);
+            .whenActive(() -> { // intake down + start rollers
+                intake.setRollerPercent(.7);
+                intake.setIntakeState(IntakeState.DOWN);
+            }, intestines)
+            .whenInactive(() -> { // intake up + stop rollers
+                intake.setRollerPercent(0);
+                intake.setIntakeState(IntakeState.UP);
+            }, intestines);
+
         driverController.aButton
             .whenActive(
-                new RunCommand(() -> {
-                    double output = -driverController.getRightStickXValue();
-                    shooter.getLimelight().setLightState(0);
-                    aimUsingLimelight = true;
-                    if (shooter.getLimelight().hasTarget()) { output = visionPID.calculate(shooter.getLimelight().getYawError(), 0); } // Math.toDegrees(Math.atan((Math.exp(0.052f)*shooter.getLimelight().getPitchError())/7))
-                    drivetrain.arcadeDrive(driverController.getLeftStickYValue(), -Math.copySign(Math.min(Math.abs(output), 1), output));
-                }, drivetrain).withTimeout(2)
-            ).whenInactive(() -> { 
+                drivetrain.aimWithVisionCommand(
+                    shooter.getLimelight(),
+                    driverController::getLeftStickYValue,
+                    () -> { return driverController.getRightStickXValue() * .7; }
+                ))
+            .whenInactive(() -> { 
                 drivetrain.tankDrive(0, 0);
-                aimUsingLimelight = false;
-                if (!flywheelUsingLimelight) shooter.getLimelight().setLightState(1);
-            });        
+            });
     }
 
-    private void configureDebugButtonBindings() {
-        // OPERATOR ------------------------------------------
-        driverController.rightBumper
-            .whenActive(() -> intestines.setMagazinePercent(0.2), intestines)
-            .whenInactive(() -> intestines.setMagazinePercent(0), intestines);
+    public void configureSoloButtonBindings() {
+        // DRIVER ------------------------------------------
+        // driver drive command is set by default (right/left joysticks)
+        // driver eject command is set by default (left bumper)
+        // operator eject command is set by default (left trigger)
+
+        driverController.rightTriggerButton // main shoot
+            .whileHeld(shooter.spinUpWithVisionCommand())
+            .whenInactive(shooter.spinDownCommand());
+
+        driverController.rightBumper // manual override
+            .whileHeld(shooter.spinUpOverrideCommand())
+            .whenInactive(shooter.spinDownCommand());
+
+        driverController.leftTriggerButton
+            .whenActive(() -> { // intake down + start rollers
+                // intake.setRollerPercent(.7);
+                intake.setIntakeState(IntakeState.DOWN);
+            }, intestines)
+            .whenInactive(() -> { // intake up + stop rollers
+                intake.setRollerPercent(0);
+                intake.setIntakeState(IntakeState.UP);
+            }, intestines);
         
-        driverController.rightTriggerButton
-            .whileHeld(new InstantCommand(() -> {
-                if (shooter.getLimelight().hasTarget()) { shooter.setShooterFromDistance(); }
-                else { shooter.setShooterSpeeds((shooterPwr * (1. - shooterRatio)) + 40, (shooterPwr * shooterRatio) + 40); }
-            }, shooter)).whenInactive(() -> { shooter.setShooterSpeeds(0, 0); });
+        driverController.leftBumper
+            .whenActive(() -> intestines.setMagazinePercent(.5))
+            .whenInactive(() -> intestines.setMagazinePercent(0));
 
-        driverController.Dpad.Up  .whenActive(() -> {shooterPwr += 50; System.out.println("shooter speed++ | now:" + shooterPwr);});
-        driverController.Dpad.Down.whenActive(() -> {shooterPwr -= 50; System.out.println("shooter speed-- | now:" + shooterPwr);});
-        driverController.Dpad.Left .whenActive(() -> {shooterRatio += 0.05; System.out.println("shooter ratio++ | now:" + shooterRatio);});
-        driverController.Dpad.Right.whenActive(() -> {shooterRatio -= 0.05; System.out.println("shooter ratio-- | now:" + shooterRatio);});
-
+        driverController.aButton
+            .whenHeld(
+                drivetrain.aimWithVisionCommand(
+                    shooter.getLimelight(),
+                    driverController::getLeftStickYValue,
+                    () -> { return driverController.getRightStickXValue() * .7; }
+                ))
+            .whenInactive(() -> { 
+                drivetrain.tankDrive(0, 0);
+            });
+        
+        // climb shit
         driverController.yButton.whenActive(() -> climber.setArm1( 1), climber).whenInactive(() -> climber.setArm1(0), climber);
         driverController.aButton.whenActive(() -> climber.setArm1(-1), climber).whenInactive(() -> climber.setArm1(0), climber);
         driverController.xButton.whenActive(() -> climber.setArm2( 1), climber).whenInactive(() -> climber.setArm2(0), climber);
         driverController.bButton.whenActive(() -> climber.setArm2(-1), climber).whenInactive(() -> climber.setArm2(0), climber);
-        
-        driverController.leftTriggerButton.whenActive(() -> intake.setRollerPercent(-1), intestines).whenInactive(() -> intake.setRollerPercent(0), intestines);
     }
 
     public Command getAutonomousCommand() {
