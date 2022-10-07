@@ -40,9 +40,9 @@ public class Drivetrain extends SubsystemBase {
     private DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(new Rotation2d(), new Pose2d());
     private SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(DriveConstants.sVolts, DriveConstants.vVoltSecondsPerMeter, DriveConstants.aVoltSecondsSquaredPerMeter);
 
-    private TunableNumber turnP = new TunableNumber("Drive/TurnP", 0.1);
-    private TunableNumber turnD = new TunableNumber("Drive/TurnD", 0.);
-    private PIDController turnController = new PIDController(0.03, 0.06, 0);
+    // private TunableNumber turnP = new TunableNumber("Drive/TurnP", 0.03);
+    // private TunableNumber turnD = new TunableNumber("Drive/TurnD", 0.);
+    private PIDController turnController = new PIDController(0.04, 0.0, 0.0);
 
     private PIDController visionPIDController = new PIDController(0.03, 0.06, 0);
 
@@ -57,8 +57,9 @@ public class Drivetrain extends SubsystemBase {
         // Calibrate n reset the gyro
         gyro.calibrate();
         gyro.reset();
-        turnController.enableContinuousInput(-180, 180);
 
+        turnController.enableContinuousInput(-180, 180);
+        
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.closedloopRamp = 0.1;
         config.openloopRamp = 0;
@@ -90,12 +91,19 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putData("Field", field);
     }
     public void resetGyro() { gyro.reset(); }
+
+    private boolean lastTurnHeadingInit = false; 
     @Override
     public void periodic() {
-        if (turnP.hasChanged() | turnD.hasChanged()) {
+        // super jank but gyro data doesnt register until first periodic so
+        // if (!lastTurnHeadingInit) {lastTurnHeading = getHeading(); lastTurnHeadingInit = true;} 
+        // System.out.println(Math.round(this.getHeading()) + " " + Math.round(lastTurnHeading) + " " + Math.round(100*(this.getHeading() - lastTurnHeading))/100 + "        " + turnController.calculate(this.getHeading(), lastTurnHeading));
+
+        /*if (turnP.hasChanged() | 
+        turnD.hasChanged()) {
             turnController.setP(turnP.get());
             turnController.setD(turnD.get());
-        }
+        }*/
 
         odometry.update(Rotation2d.fromDegrees(getHeading()), getLeftPosition(), getRightPosition());
         field.setRobotPose(getPose());
@@ -128,6 +136,28 @@ public class Drivetrain extends SubsystemBase {
         frontLeft.setSelectedSensorPosition(0);
         frontRight.setSelectedSensorPosition(0);
         gyro.reset();
+    }
+
+    private double lastTurnHeading = 0;
+    public RunCommand pidArcadeDrive(
+        DoubleSupplier throttleSupplier,
+        DoubleSupplier turnSupplier
+    ) {
+        return new RunCommand(
+            () -> {
+                double turnInput = turnSupplier.getAsDouble();
+                // if (Math.abs(turnInput) < 0.05) {
+                //     turnInput = turnController.calculate(this.getHeading(), lastTurnHeading);
+                // } else {
+                //     lastTurnHeading = this.getHeading();
+                // }
+                arcadeDrive(
+                    throttleSupplier.getAsDouble(),
+                    turnInput
+                );
+            },
+                this
+            );
     }
 
     public RunCommand aimWithVisionCommand(

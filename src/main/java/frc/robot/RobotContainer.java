@@ -1,9 +1,12 @@
 package frc.robot;
 
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -33,18 +36,15 @@ public class RobotContainer {
 		CO_OP, SOLO;
 	}
     private ControlMode controlMode = ControlMode.SOLO;
-
+    private boolean autoMag = true;
     public RobotContainer() {
         configureAutonomousChooser();
 
         // drive command by default;
         drivetrain.setDefaultCommand(
-            new RunCommand(
-                () -> drivetrain.arcadeDrive(
-                    driverController.getLeftStickYValue(),
-                    driverController.getRightStickXValue() * .7
-                ),
-                drivetrain
+            drivetrain.pidArcadeDrive(
+                () -> driverController.getLeftStickYValue(),
+                () -> driverController.getRightStickXValue() * .7
             )
         );
         
@@ -64,7 +64,7 @@ public class RobotContainer {
                     intestines.setMagazinePercent(-0.3);
                 } else {
                     // auto mag
-                    if (intestines.isBallInQueue()) {
+                    if (intestines.isBallInQueue() && autoMag) {
                         intestines.setMagazinePercent(0.2);
                     } else { // reset by default
                         intestines.setMagazinePercent(0);
@@ -74,6 +74,16 @@ public class RobotContainer {
         );
 
         if (controlMode == ControlMode.SOLO) {
+            shooter.setDefaultCommand(
+                new RunCommand(() -> {
+                    if (armed) {
+                        if (shooter.getLimelight().hasTarget()) { shooter.setShooterFromDistance(); }
+                        else { shooter.setShooterSpeeds(300, 300); }
+                    } else {
+                        shooter.setShooterSpeeds(0, 0);
+                    }
+                }, shooter)
+            );
             configureSoloButtonBindings();
         } else if (controlMode == ControlMode.CO_OP) {
             configureCoOpButtonBindings();
@@ -168,7 +178,7 @@ public class RobotContainer {
         // driver eject command is set by default (start)
         driverController.rightTriggerButton
             .whenActive(() -> { // intake down + start rollers
-                intake.setRollerPercent(.7);
+                intake.setRollerPercent(.4);
                 intake.setIntakeState(IntakeState.DOWN);
             }, intestines)
             .whenInactive(() -> { // intake up + stop rollers
@@ -188,23 +198,45 @@ public class RobotContainer {
             });
     }
 
+    public boolean armed = false;
     public void configureSoloButtonBindings() {
         // DRIVER ------------------------------------------
         // driver drive command is set by default (right/left joysticks)
         // driver eject command is set by default (left bumper)
         // operator eject command is set by default (left trigger)
 
-        driverController.rightTriggerButton // main shoot
-            .whileHeld(shooter.spinUpWithVisionCommand())
-            .whenInactive(shooter.spinDownCommand());
+        // driverController.rightTriggerButton // main shoot
+        //     .whileHeld(shooter.spinUpWithVisionCommand())
+        //     .whenInactive(shooter.spinDownCommand());
+        driverController.leftTriggerButton
+            .whenActive(
+                new ConditionalCommand(
+                (Command)(new InstantCommand(() -> {
+                    autoMag = true;
+                }).andThen(shooter.spinDownCommand())), 
+                (Command)(new RunCommand(() -> {
+                    intestines.setMagazinePercent(-0.3);
+                    autoMag = false;
+                }, intestines).withTimeout(.3).withInterrupt(() -> intestines.isBallInQueue())
+                .andThen(new InstantCommand(() -> intestines.setMagazinePercent(0), intestines))),
+                () -> {
+                    var temp = armed;
+                    armed = !armed;
 
+                    var rumble = temp ? 0 : 0.5;
+                    driverController.setRumble(RumbleType.kLeftRumble, rumble);
+                    driverController.setRumble(RumbleType.kRightRumble, rumble);
+                    return temp;
+                })
+            );
+        
         driverController.rightBumper // manual override
             .whileHeld(shooter.spinUpOverrideCommand())
             .whenInactive(shooter.spinDownCommand());
 
-        driverController.leftTriggerButton
+        driverController.rightTriggerButton
             .whenActive(() -> { // intake down + start rollers
-                // intake.setRollerPercent(.7);
+                intake.setRollerPercent(.6);
                 intake.setIntakeState(IntakeState.DOWN);
             }, intestines)
             .whenInactive(() -> { // intake up + stop rollers
@@ -213,8 +245,12 @@ public class RobotContainer {
             }, intestines);
         
         driverController.leftBumper
-            .whenActive(() -> intestines.setMagazinePercent(.5))
+            .whileHeld(new RunCommand(() -> {
+                intestines.setMagazinePercent(shooter.isAtSetpoint() ? .5 : 0);
+            }, intestines))
             .whenInactive(() -> intestines.setMagazinePercent(0));
+            // .whenActive(() -> intestines.setMagazinePercent(.5))
+            // .whenInactive(() -> intestines.setMagazinePercent(0));
 
         driverController.aButton
             .whenHeld(

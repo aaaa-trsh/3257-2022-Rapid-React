@@ -39,25 +39,24 @@ public class Intake extends SubsystemBase {
         liftEncoder.setPosition(0.7);
         liftController = liftMotor.getPIDController();
 
-        liftController.setP(0.8);
+        liftController.setP(.8);
         liftController.setI(0);
-        liftController.setD(0.2);
+        liftController.setD(1);
         liftController.setIZone(0);
         liftController.setFF(0.15);
-        liftController.setOutputRange(-1, .3);
+        liftController.setOutputRange(-2, .8);
     }
 
     // public void resetLiftEncoder() { liftEncoder.setPosition(0); }
     
     @Override
     public void periodic() {
-        if (intakeState == IntakeState.UP) {
-            liftController.setReference(.7, CANSparkMax.ControlType.kPosition);
-        } else {
-            liftController.setReference(0, CANSparkMax.ControlType.kPosition);
-        }
-        SmartDashboard.putNumber("intake lift pos", liftEncoder.getPosition());
+        targetPos = intakeState == IntakeState.UP ? 0.6 : -0.3;
+        // liftController.setFF(intakeState == IntakeState.UP ? 0.15 : 0.4);
+        liftController.setReference(targetPos, CANSparkMax.ControlType.kPosition);
         SmartDashboard.putNumber("intake lift target pos", targetPos);
+        SmartDashboard.putNumber("intake lift current", liftMotor.getOutputCurrent());
+        SmartDashboard.putNumber("intake lift pos", liftEncoder.getPosition());
     }
 
     public void setRollerPercent(double percent) { rollerMotor.set(-percent); }

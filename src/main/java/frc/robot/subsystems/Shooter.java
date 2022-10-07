@@ -138,9 +138,6 @@ public class Shooter extends SubsystemBase {
             lowerFlywheel.set(TalonFXControlMode.PercentOutput, 0);
             upperFlywheel.set(TalonFXControlMode.PercentOutput, 0);
         }
-
-        // lowerFlywheel.set(TalonFXControlMode.PercentOutput, lowerRPM);
-        // upperFlywheel.set(TalonFXControlMode.PercentOutput, upperRPM);
         
         SmartDashboard.putNumber("lower flywheel rpm", TalonFXConversions.Native2RPM(lowerFlywheel.getSelectedSensorVelocity()));
         SmartDashboard.putNumber("upper flywheel rpm", TalonFXConversions.Native2RPM(upperFlywheel.getSelectedSensorVelocity()));
@@ -150,7 +147,14 @@ public class Shooter extends SubsystemBase {
     }
 
     public Limelight getLimelight() { return limelight; }
-
+    public boolean isAtSetpoint() {
+        System.out.println(
+            "LOWER RPM: " + Math.round(TalonFXConversions.Native2RPM(lowerFlywheel.getSelectedSensorVelocity())) + " SETPOINT: " + Math.round(TalonFXConversions.RPM2Native(lowerRPM)) + " DIFF: " + Math.round(TalonFXConversions.Native2RPM(lowerFlywheel.getSelectedSensorVelocity()) - TalonFXConversions.RPM2Native(lowerRPM)) + " " + 
+            "\nUPPER RPM: " + Math.round(TalonFXConversions.Native2RPM(upperFlywheel.getSelectedSensorVelocity())) + " SETPOINT: " + Math.round(TalonFXConversions.RPM2Native(upperRPM)) + " DIFF: " + Math.round(TalonFXConversions.Native2RPM(upperFlywheel.getSelectedSensorVelocity()) - TalonFXConversions.RPM2Native(upperRPM))
+        );
+        return Math.abs(TalonFXConversions.Native2RPM(lowerFlywheel.getSelectedSensorVelocity()) - TalonFXConversions.RPM2Native(lowerRPM)) < 30 &&
+            Math.abs(TalonFXConversions.Native2RPM(upperFlywheel.getSelectedSensorVelocity()) - TalonFXConversions.RPM2Native(upperRPM)) < 30;
+    }
     public Command spinUpWithVisionCommand() {
         return new InstantCommand(() -> {
             if (getLimelight().hasTarget()) { setShooterFromDistance(); }
@@ -165,5 +169,4 @@ public class Shooter extends SubsystemBase {
     }
     public Runnable spinUpOverrideCommand() { return () -> setShooterFromDistance(-4); }
     public Runnable spinDownCommand() { return () -> setShooterSpeeds(0, 0); }
-
 }
